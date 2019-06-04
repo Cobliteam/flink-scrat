@@ -1,0 +1,11 @@
+README.md
+setup.py
+flink_scrat/__init__.py
+flink_scrat/job_manager_connector.py
+flink_scrat/main.py
+flink_scrat.egg-info/PKG-INFO
+flink_scrat.egg-info/SOURCES.txt
+flink_scrat.egg-info/dependency_links.txt
+flink_scrat.egg-info/entry_points.txt
+flink_scrat.egg-info/requires.txt
+flink_scrat.egg-info/top_level.txt

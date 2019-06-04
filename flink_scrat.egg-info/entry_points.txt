@@ -1,0 +1,3 @@
+[console_scripts]
+flink-scrat = flink_scrat.main:main
+
