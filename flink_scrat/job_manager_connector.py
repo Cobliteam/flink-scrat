@@ -1,12 +1,14 @@
 import requests
 import time
 
+from http import HTTPStatus
+
 class FlinkJobmanagerConnector():
 	def __init__(self, address, port):
 		self.path = "http://{}:{}/".format(address, port)
 
 	def handle_response(self, req_response):
-		if(req_response.status_code == 200):
+		if(req_response.status_code == HTTPStatus.OK):
 			print("OK")
 			return req_response.json()
 		else:
@@ -30,17 +32,17 @@ class FlinkJobmanagerConnector():
 			route = self.path + "jars/upload"
 			response = self.handle_response(requests.post(route, files=fileDict))
 
-			jar_id = response['filename'].rsplit("/", 1)[1]
+			jar_id = response['filename'].rsplit("/", 1)[1] if response is not None else None
 
 			return jar_id
 
 	def job_info(self, job_id):
 		route = self.path + "jobs/{}".format(job_id)
 
-		return handle_response(requests.get(route))
+		return self.handle_response(requests.get(route))
 
 
-	def submit_job(self, jar_path, job_id = None):
+	def submit_job(self, jar_path):
 		jar_id = self.submit_jar(jar_path)
 
 		route = self.path + "jars/{}/run".format(jar_id)
