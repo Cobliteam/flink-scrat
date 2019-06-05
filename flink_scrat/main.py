@@ -27,7 +27,6 @@ def parse_args():
 	args = parser.parse_args()
 	return args
 
-
 def main():
 	args = parse_args()
 
@@ -38,7 +37,7 @@ def main():
 	conn = FlinkJobmanagerConnector(address, port)
 
 	if action == "submit":
-		conn.submit_job(args.jar_path)
+		conn.submit_job(args.jar_path, args.job_id)
 
 if __name__ == "__main__":
 	main()
