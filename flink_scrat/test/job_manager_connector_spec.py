@@ -2,13 +2,16 @@ from flink_scrat.job_manager_connector import FlinkJobmanagerConnector
 
 from unittest import TestCase
 from nose.tools import assert_is_none, assert_equal
+import os
 
 FLINK_ADDRESS = 'localhost'
 FLINK_PORT = 8081
 
+test_dir = os.path.dirname(os.path.abspath(__file__))
+
 JAR_NAME = "wordcount-assembly-0.1-SNAPSHOT.jar"
-JAR_PATH = "/Users/nicolautahan/Cobliteam/flink-scrat/flink_scrat/test/resources/" + JAR_NAME
-not_jar_path = "/Users/nicolautahan/Cobliteam/flink-scrat/flink_scrat/test/resources/not_a_jar.txt"
+JAR_PATH = test_dir + "/resources/" + JAR_NAME
+not_jar_path = test_dir + "/resources/not_a_jar.txt"
 
 
 class FlinkJobmanagerConnectorSpec(TestCase):
