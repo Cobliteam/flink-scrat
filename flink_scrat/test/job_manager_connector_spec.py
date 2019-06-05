@@ -2,7 +2,6 @@ from flink_scrat.job_manager_connector import FlinkJobmanagerConnector
 
 from unittest import TestCase
 from nose.tools import assert_is_none, assert_equal
-from nose import with_setup
 
 FLINK_ADDRESS = 'localhost'
 FLINK_PORT = 8081
@@ -52,10 +51,10 @@ class FlinkJobmanagerConnectorSpec(TestCase):
 		expected_job_status = "RUNNING"
 
 		responseJson = self.connector.submit_job(JAR_PATH)
-		jobId = responseJson["jobid"]
-		jobInfo = self.connector.job_info(jobId)
+		job_id = responseJson["jobid"]
+		job_info = self.connector.job_info(job_id)
 		
-		assert_equal(jobInfo["state"], expected_job_status)
+		assert_equal(job_info["state"], expected_job_status)
 
 		not_a_jar_response_json = self.connector.submit_job(not_jar_path)
 		assert_is_none(not_a_jar_response_json)
