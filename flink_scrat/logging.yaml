@@ -1,0 +1,23 @@
+version: 1
+disable_existing_loggers: False
+formatters:
+    simple:
+        format: '%(asctime)s: %(name)s - (%(thread)d): %(levelname)s: %(message)s'
+        datefmt: '%Y-%m-%d %H:%M:%S'
+
+handlers:
+    console:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: simple
+        stream: ext://sys.stdout
+
+loggers:
+    flink_scrat:
+        level: WARN
+        handlers: [console]
+        propagate: no
+
+root:
+    level: WARN
+    handlers: [console]
