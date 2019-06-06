@@ -1,7 +1,7 @@
 import os
 import requests
 
-from http import HTTPStatus
+from flink_scrat.exception_classes import FailedSavepointException, MaxRetriesReachedException, NotAJarException
 
 class FlinkJobmanagerConnector():
 
@@ -24,6 +24,71 @@ class FlinkJobmanagerConnector():
 
 		return response
 
+<<<<<<< HEAD
+=======
+	def cancel_job_w_savepoint(self, job_id, target_dir, max_retries = 10):
+		logger.info("Cancelling Job=<{}>".format(job_id))
+		route = "{}/jobs/{}/savepoints/".format(self.path, job_id)
+
+		body = json.dumps({
+					"target-directory": target_dir,
+					"cancel-job": True
+				})
+
+		response = self.handle_response(requests.post(route, data=body))
+		
+		if response is not None:
+			logger.info("Triggered savepoint for job=<{}>".format(job_id))
+			trigger_id = response["request-id"]
+
+			for try_num in range(0, max_retries):
+				trigger_info = self.savepoint_trigger_info(job_id, trigger_id)
+				trigger_status = trigger_info['status']['id']
+
+				if trigger_status == 'IN_PROGRESS':
+					logger.debug("Savepoint still in progress. Try {}".format(try_num))
+					time.sleep(1)
+					continue
+				else:
+					try:
+						savepoint_path = trigger_info['operation']['location']
+						logger.info("Savepoint completed. Job Cancelled")
+
+					except:
+						logger.warn("Savepoint failed.")
+						raise FailedSavepointException(trigger_info['operation']['failure-cause']['stack-trace'])
+
+					return savepoint_path
+
+		logger.warn("Savepoint failed. Max retries exceded. Aborting deploy")
+		raise MaxRetriesReachedException()
+		
+		return None
+
+	def run_job(self, jar_id):
+		route = "{}/jars/{}/run".format(self.path, jar_id)
+		response = self.handle_response(requests.post(route))
+
+		return response
+
+	def run_job_from_savepoint(self, jar_id, savepoint_path):
+		logger.info("Restoring job from savepoint=<{}>".format(savepoint_path))
+		body = json.dumps({
+			'savepointPath': savepoint_path
+			})
+
+		route = self.path + "jars/{}/run".format(jar_id, data=body)
+		response = self.handle_response(requests.post(route))
+
+		return response
+
+	def savepoint_trigger_info(self, job_id, trigger_id):
+		route =  "{}/jobs/{}/savepoints/{}".format(self.path, job_id, trigger_id)
+
+		return self.handle_response(requests.get(route))
+
+
+>>>>>>> Added Exception classs and test cases for them
 	def submit_jar(self, jar_path):
 		with open(jar_path, "rb") as jar:
 			jar_name = os.path.basename(jar_path)
@@ -32,7 +97,16 @@ class FlinkJobmanagerConnector():
 			route = "{}/jars/upload".format(self.path)
 			response = self.handle_response(requests.post(route, files=file_dict))
 
+<<<<<<< HEAD
 			jar_id = os.path.basename(response['filename'])
+=======
+			if response is not None:
+				logger.info("Sucessfully uploaded JAR to cluster")
+				jar_id = response['filename'].rsplit("/", 1)[1]
+			else:
+				logger.info("Unable to upload JAR to cluster")
+				raise NotAJarException()
+>>>>>>> Added Exception classs and test cases for them
 
 			return jar_id
 
@@ -42,6 +116,7 @@ class FlinkJobmanagerConnector():
 		return self.handle_response(requests.get(route))
 
 
+<<<<<<< HEAD
 	def submit_job(self, jar_path):
 		jar_id = self.submit_jar(jar_path)
 
@@ -49,10 +124,33 @@ class FlinkJobmanagerConnector():
 		response = self.handle_response(requests.post(route))
 
 		return response
+=======
+	def submit_job(self, jar_path, target_dir=None, job_id= None):
+		logger.info("Submiting job to cluster")
+
+		body = None
+		if job_id is not None:
+			logger.info("Triggering savepoint for job=<{}>".format(job_id))
+			savepoint_path = self.cancel_job_w_savepoint(job_id, target_dir)
+			
+			if savepoint_path is None:
+				raise Exception("Max retries exceded")
+				return None
+
+			jar_id = self.submit_jar(jar_path)
+			return self.run_job_from_savepoint(jar_id, savepoint_path)
+		
+		else:
+			jar_id = self.submit_jar(jar_path)
+			return self.run_job(jar_id)
+>>>>>>> Added Exception classs and test cases for them
 
 	def list_jobs(self):
 		route = "{}/jobs".format(self.path)
 		response = self.handle_response(requests.get(route))
 
 		return response
+
+
+
 		
