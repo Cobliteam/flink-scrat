@@ -20,4 +20,5 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+PKG-INFO
 MANIFEST

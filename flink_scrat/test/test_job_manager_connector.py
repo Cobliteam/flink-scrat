@@ -10,8 +10,8 @@ FLINK_PORT = 8081
 test_dir = os.path.dirname(os.path.abspath(__file__))
 
 JAR_NAME = "wordcount-assembly-0.1-SNAPSHOT.jar"
-JAR_PATH = test_dir + "/resources/" + JAR_NAME
-not_jar_path = test_dir + "/resources/not_a_jar.txt"
+JAR_PATH = "{}/resources/{}".format(test_dir, JAR_NAME)
+not_jar_path = "{}/resources/not_a_jar.txt".format(test_dir)
 
 
 class FlinkJobmanagerConnectorSpec(TestCase):
