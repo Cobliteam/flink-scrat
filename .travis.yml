@@ -2,13 +2,15 @@ language: python
 python:
   - "3.6"
 
+services:
+  - docker
+
 before_install:
-  - git clone git@github.com:Cobliteam/deploy.git /tmp/deploy
+  - docker-compose up -d
 
 install:
-  - pip install -r requirements.txt
+  - python setup.py install
 
 script:
-  - pushd /tmp/deploy/dev-setup && ./setup.sh flink && popd
-  - nosetests
+  - python setup.py test
   

@@ -1,18 +1,20 @@
-from flink_scrat.job_manager_connector import FlinkJobmanagerConnector
-
-from unittest import TestCase
-from nose.tools import assert_is_none, assert_equal
 import os
+import tempfile
+
+from flink_scrat.job_manager_connector import FlinkJobmanagerConnector
+from unittest import TestCase
+from requests.exceptions import HTTPError
+from nose.tools import assert_is_none, assert_equal, assert_raises
+
 
 FLINK_ADDRESS = 'localhost'
 FLINK_PORT = 8081
 
-test_dir = os.path.dirname(os.path.abspath(__file__))
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 JAR_NAME = "wordcount-assembly-0.1-SNAPSHOT.jar"
-JAR_PATH = "{}/resources/{}".format(test_dir, JAR_NAME)
-not_jar_path = "{}/resources/not_a_jar.txt".format(test_dir)
-
+JAR_PATH = os.path.join(TEST_DIR, "resources/" + JAR_NAME)
+NOT_A_JAR = tempfile.NamedTemporaryFile()
 
 class FlinkJobmanagerConnectorSpec(TestCase):
 	def setUp(self):
@@ -29,8 +31,10 @@ class FlinkJobmanagerConnectorSpec(TestCase):
 		jar_id = self.connector.submit_jar(JAR_PATH)
 		assert_equal(JAR_NAME in jar_id, True)
 
-		jar_id = self.connector.submit_jar(not_jar_path)
-		assert_is_none(jar_id)
+		with assert_raises(HTTPError):
+			jar_id = self.connector.submit_jar(NOT_A_JAR.name)
+
+			assert_is_none(jar_id)
 
 	def test_list_jars(self):
 		expected_jar_id = self.connector.submit_jar(JAR_PATH)
@@ -59,5 +63,6 @@ class FlinkJobmanagerConnectorSpec(TestCase):
 		
 		assert_equal(job_info["state"], expected_job_status)
 
-		not_a_jar_response_json = self.connector.submit_job(not_jar_path)
-		assert_is_none(not_a_jar_response_json)
+		with assert_raises(HTTPError):
+			not_a_jar_response_json = self.connector.submit_job(NOT_A_JAR.name)
+			assert_is_none(not_a_jar_response_json)

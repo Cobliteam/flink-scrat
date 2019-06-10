@@ -1,14 +1,14 @@
 import requests
-import time
 
 from http import HTTPStatus
 
 class FlinkJobmanagerConnector():
+
 	def __init__(self, address, port):
 		self.path = "http://{}:{}".format(address, port)
 
 	def handle_response(self, req_response):
-		if(req_response.status_code == HTTPStatus.OK):
+		if(req_response.raise_for_status() is None):
 			return req_response.json()
 		else:
 			return None

@@ -4,9 +4,9 @@ from flink_scrat.job_manager_connector import FlinkJobmanagerConnector
 
 
 def parse_args():
-	parser = argparse.ArgumentParser(description="Python client to deploy JVM applications to a remote flink cluster")
+	parser = argparse.ArgumentParser(description="A python client to deploy Flink applications to a remote cluster")
 
-	parser.add_argument("--address", dest="address", required=True,
+	parser.add_argument("--address", dest="address", required=False, default='localhost',
 		help="Address for Flink JobManager")
 
 	parser.add_argument("--port", dest="port", required=False, default=8081,
@@ -20,7 +20,7 @@ def parse_args():
 		help="Path for jar to be deployed")
 
 	submit_parser.add_argument("--job-id", dest="job_id", required=False,
-		help="JobId for job to restore from.")
+		help="Unique identifier for job to be restored")
 
 	submit_parser.set_defaults(action="submit")
 
@@ -38,7 +38,7 @@ def main():
 	conn = FlinkJobmanagerConnector(address, port)
 
 	if action == "submit":
-		conn.submit_job(args.jar_path, args.job_id)
+		conn.submit_job(args.jar_path)
 
 if __name__ == "__main__":
 	main()

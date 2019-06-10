@@ -1,0 +1,18 @@
+version: '2.3'
+services:
+  flink-jobmanager:
+    image: "flink:1.7-scala_2.11"
+    command: 
+      - "jobmanager"
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=flink-jobmanager
+    ports:
+      - "8081:8081"
+      - "6123:6123"
+  flink-taskmanager:
+    image: "flink:1.7-scala_2.11"
+    depends_on:
+      - flink-jobmanager
+    command: "taskmanager"
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=flink-jobmanager
