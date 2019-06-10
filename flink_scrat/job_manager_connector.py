@@ -54,3 +54,4 @@ class FlinkJobmanagerConnector():
 		response = self.handle_response(requests.get(route))
 
 		return response
+		

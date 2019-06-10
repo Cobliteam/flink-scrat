@@ -9,28 +9,37 @@ def parse_args():
 	parser.add_argument("--address", dest="address", required=True,
 		help="Address for Flink JobManager")
 
-	parser.add_argument("--port", dest="port", required=True,
-		help="Port for Flink JobManager default 8081")
+	parser.add_argument("--port", dest="port", required=False, default=8081,
+		help="Port for Flink JobManager (default 8081)")
 
-	parser.add_argument("--action", dest="action", required=True,
-		help="Blah for now")
+	cmds = parser.add_subparsers(help="sub-command help")
 
-	parser.add_argument("--jar-path", dest="jar_path", required=False,
-		help="Blah for now")
+	submit_parser = cmds.add_parser('submit', help="Submit a job to the flink cluster")
 
-	parser.add_argument("--job-id", dest="job_id", required=False,
-		help="Blah for now")
+	submit_parser.add_argument("--jar-path", dest="jar_path", required=True,
+		help="Path for jar to be deployed")
+
+	submit_parser.add_argument("--job-id", dest="job_id", required=False,
+		help="JobId for job to restore from.")
+
+	submit_parser.set_defaults(action="submit")
 
 	args = parser.parse_args()
-	return (args.address, args.port, args.action, args.jar_path, args.job_id)
+	return args
+
 
 def main():
-	address, port, action, jar_path, job_id = parse_args()
+	args = parse_args()
+
+	address = args.address
+	port = args.port
+	action = args.action
 
 	conn = FlinkJobmanagerConnector(address, port)
 
 	if action == "submit":
-		conn.submit_job(jar_path, job_id)
+		conn.submit_job(args.jar_path, args.job_id)
 
 if __name__ == "__main__":
 	main()
+
