@@ -1,12 +1,12 @@
 import os
 import tempfile
+import time
 
 from flink_scrat.job_manager_connector import FlinkJobmanagerConnector
-from flink_scrat.exception_classes import FailedSavepointException, MaxRetriesReachedException, NotAJarException
-from unittest import TestCase
+from flink_scrat.exception_classes import FailedSavepointException, MaxRetriesReachedException
+from nose.tools import eq_, assert_is_none, assert_raises, assert_is_not_none
 from requests.exceptions import HTTPError
 from unittest import TestCase
-from nose.tools import eq_, assert_is_none, assert_raises
 
 FLINK_ADDRESS = 'localhost'
 FLINK_PORT = 8081
@@ -29,12 +29,14 @@ class FlinkJobmanagerConnectorSpec(TestCase):
 		self.connector = FlinkJobmanagerConnector(FLINK_ADDRESS, FLINK_PORT)
 
 	def tearDown(self):
+		json_list_jobs = self.connector.list_jobs()
+		for job in json_list_jobs['jobs']:
+			if job['status'] == "RUNNING":
+				self.connector.cancel_job(job['id'])
+
 		json_list_jars = self.connector.list_jars()
 		jar_ids = [file['id'] for file in json_list_jars['files']]
-
-		json_list_jobs = self.connector.list_jobs()
-		job_ids = [job['id'] for job in json_list_jars['jobs']]
-
+	
 		for jar_id in jar_ids:
 			self.connector.delete_jar(jar_id)
 
@@ -66,11 +68,27 @@ class FlinkJobmanagerConnectorSpec(TestCase):
 		eq_(expected_jar_id not in jar_ids, True)
 
 	def test_submit_jobs(self):
-		responseJson = self.connector.submit_job(JAR_PATH)
-		job_id = responseJson["jobid"]
+		response_json = self.connector.submit_job(JAR_PATH)
+		job_id = response_json["jobid"]
 		
 		eq_(is_job_running(self.connector, job_id), True)
 
 		with assert_raises(HTTPError):
 			not_a_jar_response_json = self.connector.submit_job(NOT_A_JAR.name)
 			assert_is_none(not_a_jar_response_json)
+
+	def test_cancel_job_w_savepoint(self):
+		response_json = self.connector.submit_job(JAR_PATH)
+		job_id = response_json["jobid"]
+		target_dir = '/tmp/savepoint'
+		time.sleep(5)
+
+		savepoint_trigger = self.connector.cancel_job_w_savepoint(job_id, target_dir)
+		assert_is_not_none(savepoint_trigger)
+
+		job_id = "Nada"
+		with assert_raises(HTTPError):
+			savepoint_trigger = self.connector.cancel_job_w_savepoint(job_id, target_dir)
+			assert_is_none(savepoint_trigger)
+
+

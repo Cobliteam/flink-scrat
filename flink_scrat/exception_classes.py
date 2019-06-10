@@ -4,6 +4,4 @@ class MaxRetriesReachedException(Exception):
 
 class FailedSavepointException(Exception):
 	pass
-
-class NotAJarException(Exception):
-	pass
+	
