@@ -1,6 +1,7 @@
 import os
 import tempfile
 import time
+import randompy
 
 from flink_scrat.job_manager_connector import FlinkJobmanagerConnector
 from flink_scrat.exception_classes import FailedSavepointException, MaxRetriesReachedException
@@ -86,7 +87,7 @@ class FlinkJobmanagerConnectorSpec(TestCase):
 		savepoint_trigger = self.connector.cancel_job_w_savepoint(job_id, target_dir)
 		assert_is_not_none(savepoint_trigger)
 
-		job_id = "Nada"
+		job_id = randompy.string(10)
 		with assert_raises(HTTPError):
 			savepoint_trigger = self.connector.cancel_job_w_savepoint(job_id, target_dir)
 			assert_is_none(savepoint_trigger)

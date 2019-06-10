@@ -1,7 +1,12 @@
 import os
 import requests
+import logging
+import json
+import time
 
 from flink_scrat.exception_classes import FailedSavepointException, MaxRetriesReachedException
+
+logger = logging.getLogger(__name__)
 
 class FlinkJobmanagerConnector():
 
