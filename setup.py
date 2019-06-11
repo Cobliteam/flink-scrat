@@ -17,7 +17,7 @@ setup(
     url='https://github.com/Cobliteam/flink-scrat',
     download_url='https://github.com/Cobliteam/flink-scrat/archive/{}.tar.gz'.format(VERSION),
     author='Nicolau Tahan',
-    author_email='nicolau.tahan@cobli.co',
+    author_email='tech@cobli.co',
     license='MIT',
     install_requires=install_requires,
     tests_require=tests_require,

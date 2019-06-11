@@ -1,3 +1,4 @@
+import os
 import requests
 
 from http import HTTPStatus
@@ -8,10 +9,8 @@ class FlinkJobmanagerConnector():
 		self.path = "http://{}:{}".format(address, port)
 
 	def handle_response(self, req_response):
-		if(req_response.raise_for_status() is None):
-			return req_response.json()
-		else:
-			return None
+		req_response.raise_for_status()
+		return req_response.json()
 
 	def list_jars(self):
 		route = "{}/jars".format(self.path)
@@ -27,11 +26,13 @@ class FlinkJobmanagerConnector():
 
 	def submit_jar(self, jar_path):
 		with open(jar_path, "rb") as jar:
-			file_dict = {'files': jar}
+			jar_name = os.path.basename(jar_path)
+			file_dict = {'files': (jar_name, jar)}
+
 			route = "{}/jars/upload".format(self.path)
 			response = self.handle_response(requests.post(route, files=file_dict))
 
-			jar_id = response['filename'].rsplit("/", 1)[1] if response is not None else None
+			jar_id = os.path.basename(response['filename'])
 
 			return jar_id
 
