@@ -28,8 +28,8 @@ def setup_logging():
             config = yaml.safe_load(f.read())
             if log_level:
                 loggers = config.setdefault('loggers', {})
-                delay_ruler_logger = loggers.setdefault('delay_ruler', {})
-                delay_ruler_logger['level'] = default_level
+                flink_scrat_logger = loggers.setdefault('flink_scrat', {})
+                flink_scrat_logger['level'] = default_level
         logging.config.dictConfig(config)
     else:
         logging.basicConfig(level=default_level)

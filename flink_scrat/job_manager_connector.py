@@ -50,38 +50,37 @@ class FlinkJobmanagerConnector():
 
 				if trigger_status == 'IN_PROGRESS':
 					logger.debug("Savepoint still in progress. Try {}".format(try_num))
-					time.sleep(1)
+					time.sleep(2)
 					continue
 				else:
 					try:
 						savepoint_path = trigger_info['operation']['location']
-						logger.info("Savepoint completed. Job Cancelled")
+						logger.info("Savepoint completed path=<{}>. Job Cancelled".format(savepoint_path))
+
+						return savepoint_path
 
 					except:
 						logger.warning("Savepoint failed.")
 						raise FailedSavepointException(trigger_info['operation']['failure-cause']['stack-trace'])
 
-					return savepoint_path
-
-		logger.warning("Savepoint failed. Max retries exceded. Aborting deploy")
+		logger.warning("Savepoint failed. Max retries exceded.")
 		raise MaxRetriesReachedException()
 		
 		return None
 
-	def run_job(self, jar_id):
+	def run_job(self, jar_id, body={}):
 		route = "{}/jars/{}/run".format(self.path, jar_id)
-		response = self.handle_response(requests.post(route))
+		response = self.handle_response(requests.post(route, data=json.dumps(body)))
 
 		return response
 
 	def run_job_from_savepoint(self, jar_id, savepoint_path):
 		logger.info("Restoring job from savepoint=<{}>".format(savepoint_path))
-		body = json.dumps({
+		body = {
 			'savepointPath': savepoint_path
-			})
+			}
 
-		route = self.path + "jars/{}/run".format(jar_id, data=body)
-		response = self.handle_response(requests.post(route))
+		self.run_job(jar_id, body)
 
 		return response
 
@@ -99,7 +98,6 @@ class FlinkJobmanagerConnector():
 			route = "{}/jars/upload".format(self.path)
 			response = self.handle_response(requests.post(route, files=file_dict))
 
-
 			jar_id = os.path.basename(response['filename'])
 
 			if response is not None:
@@ -115,7 +113,7 @@ class FlinkJobmanagerConnector():
 
 		return self.handle_response(requests.get(route))
 
-	def submit_job(self, jar_path, target_dir=None, job_id= None):
+	def submit_job(self, jar_path, target_dir=None, job_id=None):
 		logger.info("Submiting job to cluster")
 
 		body = None
@@ -146,6 +144,3 @@ class FlinkJobmanagerConnector():
 		except:
 			logger.warning("Could not find job=<{}>".format(job_id))
 			return None
-
-
-		
