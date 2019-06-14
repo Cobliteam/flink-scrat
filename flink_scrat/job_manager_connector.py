@@ -1,58 +1,167 @@
 import os
 import requests
+import logging
+import time
 
-from http import HTTPStatus
+from requests.exceptions import HTTPError
+from flink_scrat.exceptions import (FailedSavepointException, MaxRetriesReachedException,
+                                    NotValidJARException, JobRunFailedException, JobIdNotFoundException)
+
+logger = logging.getLogger(__name__)
+
 
 class FlinkJobmanagerConnector():
 
-	def __init__(self, address, port):
-		self.path = "http://{}:{}".format(address, port)
+    def __init__(self, address, port):
+        self.path = "http://{}:{}".format(address, port)
 
-	def handle_response(self, req_response):
-		req_response.raise_for_status()
-		return req_response.json()
+    def handle_response(self, req_response):
+        req_response.raise_for_status()
+        return req_response.json()
 
-	def list_jars(self):
-		route = "{}/jars".format(self.path)
-		response = self.handle_response(requests.get(route))
+    def list_jars(self):
+        route = "{}/jars".format(self.path)
+        response = self.handle_response(requests.get(route))
 
-		return response
+        return response
 
-	def delete_jar(self, jar_id):
-		route = "{}/jars/{}".format(self.path, jar_id)
-		response = self.handle_response(requests.delete(route))
+    def delete_jar(self, jar_id):
+        route = "{}/jars/{}".format(self.path, jar_id)
+        response = self.handle_response(requests.delete(route))
 
-		return response
+        return response
 
-	def submit_jar(self, jar_path):
-		with open(jar_path, "rb") as jar:
-			jar_name = os.path.basename(jar_path)
-			file_dict = {'files': (jar_name, jar)}
+    def _await_savepoint_completion(self, job_id, request_id, max_retries=20):
+        retry_sleep_seconds = 2
+        in_progess_status = 'IN_PROGRESS'
+        for try_num in range(0, max_retries):
+            trigger_info = self.savepoint_trigger_info(job_id, request_id)
+            trigger_status = trigger_info['status']['id']
 
-			route = "{}/jars/upload".format(self.path)
-			response = self.handle_response(requests.post(route, files=file_dict))
+            if trigger_status == in_progess_status:
+                logger.debug(
+                    "Savepoint still in progress. Try {}".format(try_num))
 
-			jar_id = os.path.basename(response['filename'])
+                time.sleep(retry_sleep_seconds)
+                continue
+            else:
+                savepoint_result = trigger_info['operation']
+                if('failure-cause' in savepoint_result.keys()):
+                    logger.warning("Savepoint failed.")
+                    raise FailedSavepointException(
+                        trigger_info['operation']['failure-cause']['stack-trace'])
 
-			return jar_id
+                else:
+                    savepoint_path = savepoint_result['location']
+                    logger.info("Savepoint completed path=<{}>. Job Cancelled".format(savepoint_path))
 
-	def job_info(self, job_id):
-		route = "{}/jobs/{}".format(self.path, job_id)
+                    return savepoint_path
 
-		return self.handle_response(requests.get(route))
+        logger.warning("Savepoint failed. Max retries exceded.")
+        raise MaxRetriesReachedException(
+            "Savepoint was not completed in time. Max retries=<{}> reached".format(max_retries))
 
+    def cancel_job_with_savepoint(self, job_id, target_dir):
+        logger.info("Cancelling Job=<{}> and adding savepoit to savepoint_path=<{}>".format(job_id, target_dir))
+        route = "{}/jobs/{}/savepoints/".format(self.path, job_id)
 
-	def submit_job(self, jar_path):
-		jar_id = self.submit_jar(jar_path)
+        body = {
+            "target-directory": target_dir,
+            "cancel-job": True
+        }
 
-		route = "{}/jars/{}/run".format(self.path, jar_id)
-		response = self.handle_response(requests.post(route))
+        try:
+            response = self.handle_response(requests.post(route, json=body))
 
-		return response
+            if response is not None:
+                request_id = response["request-id"]
+                logger.info("Triggered savepoint for job=<{}>. Savepoint_request_id=<{}>".format(job_id, request_id))
 
-	def list_jobs(self):
-		route = "{}/jobs".format(self.path)
-		response = self.handle_response(requests.get(route))
+                return self._await_savepoint_completion(job_id, request_id)
+        except HTTPError:
+            raise JobIdNotFoundException("Could not find JobId=<{}>".format(job_id))
 
-		return response
-		
+    def run_job(self, jar_id, body=None):
+        logger.info("Starting job for deployed JAR=<{}>".format(jar_id))
+        route = "{}/jars/{}/run".format(self.path, jar_id)
+        try:
+            response = self.handle_response(
+                requests.post(route, json=body))
+            return response
+        except HTTPError:
+            raise JobRunFailedException("Unable to start running job from jar=<{}>".format(jar_id))
+
+    def run_job_from_savepoint(self, jar_id, savepoint_path):
+        logger.info("Restoring job from savepoint=<{}>".format(savepoint_path))
+        body = {
+            'savepointPath': savepoint_path
+        }
+
+        response = self.run_job(jar_id, body)
+
+        return response
+
+    def savepoint_trigger_info(self, job_id, request_id):
+        route = "{}/jobs/{}/savepoints/{}".format(
+            self.path, job_id, request_id)
+
+        return self.handle_response(requests.get(route))
+
+    def submit_jar(self, jar_path):
+        with open(jar_path, "rb") as jar:
+            jar_name = os.path.basename(jar_path)
+            file_dict = {'files': (jar_name, jar)}
+
+            route = "{}/jars/upload".format(self.path)
+            try:
+                response = self.handle_response(
+                    requests.post(route, files=file_dict))
+
+                jar_id = os.path.basename(response['filename'])
+                logger.info("Sucessfully uploaded JAR=<{}> to cluster".format(jar_id))
+                return jar_id
+            except HTTPError:
+                logger.warning("Unable to upload JAR=<{}> to cluster".format(jar_path))
+                raise NotValidJARException("File at {} is not a valid JAR".format(jar_path))
+
+    def job_info(self, job_id):
+        route = "{}/jobs/{}".format(self.path, job_id)
+
+        return self.handle_response(requests.get(route))
+
+    def submit_job(self, jar_path, target_dir=None, job_id=None):
+        job_params = {
+            "jar-path": jar_path,
+            "target-directory": target_dir,
+            "job-id": job_id
+        }
+
+        logger.info("Submiting job to cluster")
+        logging.info("Job Parameters=<>{}".format(job_params))
+        if job_id is not None and target_dir is not None:
+            logger.info("Triggering savepoint for job=<{}>".format(job_id))
+            savepoint_path = self.cancel_job_with_savepoint(job_id, target_dir)
+
+            if savepoint_path is not None:
+                jar_id = self.submit_jar(jar_path)
+                return self.run_job_from_savepoint(jar_id, savepoint_path)
+
+        else:
+            jar_id = self.submit_jar(jar_path)
+            return self.run_job(jar_id)
+
+    def list_jobs(self):
+        route = "{}/jobs".format(self.path)
+        response = self.handle_response(requests.get(route))
+
+        return response
+
+    def cancel_job(self, job_id):
+        params = {"mode": "cancel"}
+        route = "{}/jobs/{}".format(self.path, job_id)
+
+        try:
+            return self.handle_response(requests.patch(route, params=params))
+        except HTTPError:
+            logger.warning("Could not find job=<{}>".format(job_id))
+            return None
