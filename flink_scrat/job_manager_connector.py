@@ -163,11 +163,11 @@ class FlinkJobmanagerConnector():
         return job_info["state"] == running_job_status
 
     def _await_job_termination(self, job_id, max_retries=20):
+        retry_sleep_seconds = 2
         for try_num in range(0, max_retries):
             if self._is_job_running(job_id):
                 logger.debug(
                     "Job is running. Try {}".format(try_num))
-                retry_sleep_seconds = 2
                 time.sleep(retry_sleep_seconds)
                 continue
             else:

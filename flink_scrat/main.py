@@ -33,7 +33,7 @@ def parse_args():
 
     cancel_parser = cmds.add_parser('cancel', help="Cancel a running job")
 
-    cancel_parser.add_argument("--s", dest="savepoint", required=False,
+    cancel_parser.add_argument("--s", dest="savepoint", required=False, action='store_true',
                                help="Trigger a savepoint before canceling a job")
 
     cancel_parser.add_argument("--target-dir", dest="target_dir", required=False,

@@ -18,13 +18,6 @@ JAR_PATH = os.path.join(TEST_DIR, "resources/" + JAR_NAME)
 NOT_A_JAR = tempfile.NamedTemporaryFile()
 
 
-def is_job_running(connector, job_id):
-    running_job_status = "RUNNING"
-    job_info = connector.job_info(job_id)
-
-    return job_info["state"] == running_job_status
-
-
 class FlinkJobmanagerConnectorSpec(TestCase):
     def setUp(self):
         self.connector = FlinkJobmanagerConnector(FLINK_ADDRESS, FLINK_PORT)
@@ -74,12 +67,20 @@ class FlinkJobmanagerConnectorSpec(TestCase):
         response_json = self.connector.submit_job(JAR_PATH)
         job_id = response_json["jobid"]
 
-        assert_equal(is_job_running(self.connector, job_id), True)
+        assert_equal(self.connector._is_job_running(job_id), True)
 
     def test_submit_job_with_not_valid_jar(self):
         with assert_raises(NotValidJARException):
             not_a_jar_response_json = self.connector.submit_job(NOT_A_JAR.name)
             assert_is_none(not_a_jar_response_json)
+
+    def test_cancel_job(self):
+        response_json = self.connector.submit_job(JAR_PATH)
+        job_id = response_json["jobid"]
+        time.sleep(5)
+
+        self.connector.cancel_job(job_id)
+        assert_equal(self.connector._is_job_running(job_id), False)
 
     def test_cancel_job_with_savepoint(self):
         response_json = self.connector.submit_job(JAR_PATH)
@@ -88,6 +89,12 @@ class FlinkJobmanagerConnectorSpec(TestCase):
 
         savepoint_trigger = self.connector.cancel_job_with_savepoint(job_id, self.savepoint_dir)
         assert_is_not_none(savepoint_trigger)
+
+    def test_cancel_job_with__no_job_id(self):
+        job_id = randompy.string(10)
+        with assert_raises(JobIdNotFoundException):
+            savepoint_trigger = self.connector.cancel_job(job_id)
+            assert_is_none(savepoint_trigger)
 
     def test_cancel_job_with_savepoint_no_jobid(self):
         job_id = randompy.string(10)
