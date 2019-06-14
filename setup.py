@@ -2,15 +2,15 @@ from setuptools import setup
 
 VERSION = '0.0.1'
 
-install_requires=[
-        'requests==2.22.0', 
-        'argparse==1.4.0',
-        "pyaml==19.4.1",
-        'PyYAML==5.1.1',
-        'envparse==0.2.0']
+install_requires = [
+    'requests==2.22.0',
+    'argparse==1.4.0',
+    "pyaml==19.4.1",
+    'PyYAML==5.1.1',
+    'envparse==0.2.0']
 
-tests_require=['nose==1.3.7',
-        'randompy']
+tests_require = ['nose==1.3.7',
+                 'randompy']
 
 
 setup(

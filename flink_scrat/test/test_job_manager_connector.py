@@ -4,9 +4,8 @@ import time
 import randompy
 
 from flink_scrat.job_manager_connector import FlinkJobmanagerConnector
-from flink_scrat.exception_classes import FailedSavepointException, MaxRetriesReachedException
-from nose.tools import eq_, assert_is_none, assert_raises, assert_is_not_none
-from requests.exceptions import HTTPError
+from flink_scrat.exceptions import NotValidJARException, JobIdNotFoundException
+from nose.tools import assert_equal, assert_is_none, assert_raises, assert_is_not_none
 from unittest import TestCase
 
 FLINK_ADDRESS = 'localhost'
@@ -14,82 +13,84 @@ FLINK_PORT = 8081
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
-JAR_NAME = "wordcount-assembly-0.1-SNAPSHOT.jar"
+JAR_NAME = "wordcount-assembly-1-SNAPSHOT.jar"
 JAR_PATH = os.path.join(TEST_DIR, "resources/" + JAR_NAME)
 NOT_A_JAR = tempfile.NamedTemporaryFile()
 
+
 def is_job_running(connector, job_id):
-	running_job_status = "RUNNING"
-	job_info = connector.job_info(job_id)
-	
-	return job_info["state"] == running_job_status
+    running_job_status = "RUNNING"
+    job_info = connector.job_info(job_id)
+
+    return job_info["state"] == running_job_status
 
 
 class FlinkJobmanagerConnectorSpec(TestCase):
-	def setUp(self):
-		self.connector = FlinkJobmanagerConnector(FLINK_ADDRESS, FLINK_PORT)
+    def setUp(self):
+        self.connector = FlinkJobmanagerConnector(FLINK_ADDRESS, FLINK_PORT)
+        self.savepoint_dir = tempfile.TemporaryDirectory()
 
-	def tearDown(self):
-		json_list_jobs = self.connector.list_jobs()
-		for job in json_list_jobs['jobs']:
-			if job['status'] == "RUNNING":
-				self.connector.cancel_job(job['id'])
+    def tearDown(self):
+        test_jobs = self.connector.list_jobs()
+        for job in test_jobs['jobs']:
+            if job['status'] == "RUNNING":
+                self.connector.cancel_job(job['id'])
 
-		json_list_jars = self.connector.list_jars()
-		jar_ids = [file['id'] for file in json_list_jars['files']]
-	
-		for jar_id in jar_ids:
-			self.connector.delete_jar(jar_id)
+        json_list_jars = self.connector.list_jars()
+        jar_ids = [file['id'] for file in json_list_jars['files']]
 
-	def test_submit_jar(self):
-		jar_id = self.connector.submit_jar(JAR_PATH)
-		eq_(JAR_NAME in jar_id, True)
+        for jar_id in jar_ids:
+            self.connector.delete_jar(jar_id)
 
-		with assert_raises(HTTPError):
-			jar_id = self.connector.submit_jar(NOT_A_JAR.name)
+    def test_submit_jar(self):
+        jar_id = self.connector.submit_jar(JAR_PATH)
+        assert_equal(JAR_NAME in jar_id, True)
 
-			assert_is_none(jar_id)
+    def test_submit_jar_with_not_valid_jar(self):
+        with assert_raises(NotValidJARException):
+            jar_id = self.connector.submit_jar(NOT_A_JAR.name)
 
-	def test_list_jars(self):
-		expected_jar_id = self.connector.submit_jar(JAR_PATH)
+            assert_is_none(jar_id)
 
-		json_list_jars = self.connector.list_jars()
-		jar_ids = [file['id'] for file in json_list_jars['files']]
+    def test_list_jars(self):
+        expected_jar_id = self.connector.submit_jar(JAR_PATH)
 
-		eq_(expected_jar_id in jar_ids, True)
+        json_list_jars = self.connector.list_jars()
+        jar_ids = [file['id'] for file in json_list_jars['files']]
 
-	def test_delete_jars(self):
-		expected_jar_id = self.connector.submit_jar(JAR_PATH)
+        assert_equal(expected_jar_id in jar_ids, True)
 
-		self.connector.delete_jar(expected_jar_id)
+    def test_delete_jars(self):
+        expected_jar_id = self.connector.submit_jar(JAR_PATH)
 
-		json_list_jars = self.connector.list_jars()
-		jar_ids = [file['id'] for file in json_list_jars['files']]
+        self.connector.delete_jar(expected_jar_id)
 
-		eq_(expected_jar_id not in jar_ids, True)
+        json_list_jars = self.connector.list_jars()
+        jar_ids = [file['id'] for file in json_list_jars['files']]
 
-	def test_submit_jobs(self):
-		response_json = self.connector.submit_job(JAR_PATH)
-		job_id = response_json["jobid"]
-		
-		eq_(is_job_running(self.connector, job_id), True)
+        assert_equal(expected_jar_id not in jar_ids, True)
 
-		with assert_raises(HTTPError):
-			not_a_jar_response_json = self.connector.submit_job(NOT_A_JAR.name)
-			assert_is_none(not_a_jar_response_json)
+    def test_submit_jobs(self):
+        response_json = self.connector.submit_job(JAR_PATH)
+        job_id = response_json["jobid"]
 
-	def test_cancel_job_w_savepoint(self):
-		response_json = self.connector.submit_job(JAR_PATH)
-		job_id = response_json["jobid"]
-		target_dir = '/tmp/savepoint'
-		time.sleep(5)
+        assert_equal(is_job_running(self.connector, job_id), True)
 
-		savepoint_trigger = self.connector.cancel_job_w_savepoint(job_id, target_dir)
-		assert_is_not_none(savepoint_trigger)
+    def test_submit_job_with_not_valid_jar(self):
+        with assert_raises(NotValidJARException):
+            not_a_jar_response_json = self.connector.submit_job(NOT_A_JAR.name)
+            assert_is_none(not_a_jar_response_json)
 
-		job_id = randompy.string(10)
-		with assert_raises(HTTPError):
-			savepoint_trigger = self.connector.cancel_job_w_savepoint(job_id, target_dir)
-			assert_is_none(savepoint_trigger)
+    def test_cancel_job_with_savepoint(self):
+        response_json = self.connector.submit_job(JAR_PATH)
+        job_id = response_json["jobid"]
+        time.sleep(20)
 
+        savepoint_trigger = self.connector.cancel_job_with_savepoint(job_id, self.savepoint_dir.name)
+        assert_is_not_none(savepoint_trigger)
 
+    def test_cancel_job_with_savepoint_no_jobid(self):
+        job_id = randompy.string(10)
+        with assert_raises(JobIdNotFoundException):
+            savepoint_trigger = self.connector.cancel_job_with_savepoint(job_id, self.savepoint_dir.name)
+            assert_is_none(savepoint_trigger)
