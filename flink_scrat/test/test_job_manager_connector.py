@@ -13,7 +13,7 @@ FLINK_PORT = 8081
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
-JAR_NAME = "wordcount-assembly-1-SNAPSHOT.jar"
+JAR_NAME = "wordcount.jar"
 JAR_PATH = os.path.join(TEST_DIR, "resources/" + JAR_NAME)
 NOT_A_JAR = tempfile.NamedTemporaryFile()
 
@@ -28,7 +28,7 @@ def is_job_running(connector, job_id):
 class FlinkJobmanagerConnectorSpec(TestCase):
     def setUp(self):
         self.connector = FlinkJobmanagerConnector(FLINK_ADDRESS, FLINK_PORT)
-        self.savepoint_dir = tempfile.TemporaryDirectory()
+        self.savepoint_dir = "/tmp/savepoint"
 
     def tearDown(self):
         test_jobs = self.connector.list_jobs()
@@ -84,13 +84,13 @@ class FlinkJobmanagerConnectorSpec(TestCase):
     def test_cancel_job_with_savepoint(self):
         response_json = self.connector.submit_job(JAR_PATH)
         job_id = response_json["jobid"]
-        time.sleep(20)
+        time.sleep(5)
 
-        savepoint_trigger = self.connector.cancel_job_with_savepoint(job_id, self.savepoint_dir.name)
+        savepoint_trigger = self.connector.cancel_job_with_savepoint(job_id, self.savepoint_dir)
         assert_is_not_none(savepoint_trigger)
 
     def test_cancel_job_with_savepoint_no_jobid(self):
         job_id = randompy.string(10)
         with assert_raises(JobIdNotFoundException):
-            savepoint_trigger = self.connector.cancel_job_with_savepoint(job_id, self.savepoint_dir.name)
+            savepoint_trigger = self.connector.cancel_job_with_savepoint(job_id, self.savepoint_dir)
             assert_is_none(savepoint_trigger)

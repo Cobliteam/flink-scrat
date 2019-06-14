@@ -4,7 +4,8 @@ import logging
 import time
 
 from requests.exceptions import HTTPError
-from flink_scrat.exceptions import FailedSavepointException, MaxRetriesReachedException, NotValidJARException, JobRunFailedException, JobIdNotFoundException
+from flink_scrat.exceptions import (FailedSavepointException, MaxRetriesReachedException,
+                                    NotValidJARException, JobRunFailedException, JobIdNotFoundException)
 
 logger = logging.getLogger(__name__)
 
@@ -31,16 +32,16 @@ class FlinkJobmanagerConnector():
         return response
 
     def _await_savepoint_completion(self, job_id, request_id, max_retries=20):
+        retry_sleep_seconds = 2
+        in_progess_status = 'IN_PROGRESS'
         for try_num in range(0, max_retries):
             trigger_info = self.savepoint_trigger_info(job_id, request_id)
             trigger_status = trigger_info['status']['id']
-            in_progess_status = 'IN_PROGRESS'
 
             if trigger_status == in_progess_status:
                 logger.debug(
                     "Savepoint still in progress. Try {}".format(try_num))
 
-                retry_sleep_seconds = 2
                 time.sleep(retry_sleep_seconds)
                 continue
             else:
@@ -51,7 +52,7 @@ class FlinkJobmanagerConnector():
                         trigger_info['operation']['failure-cause']['stack-trace'])
 
                 else:
-                    savepoint_path = ['location']
+                    savepoint_path = savepoint_result['location']
                     logger.info("Savepoint completed path=<{}>. Job Cancelled".format(savepoint_path))
 
                     return savepoint_path
@@ -81,7 +82,7 @@ class FlinkJobmanagerConnector():
             raise JobIdNotFoundException("Could not find JobId=<{}>".format(job_id))
 
     def run_job(self, jar_id, body=None):
-        logger.info("Starting job for deployed JAR")
+        logger.info("Starting job for deployed JAR=<{}>".format(jar_id))
         route = "{}/jars/{}/run".format(self.path, jar_id)
         try:
             response = self.handle_response(
@@ -120,7 +121,7 @@ class FlinkJobmanagerConnector():
                 logger.info("Sucessfully uploaded JAR=<{}> to cluster".format(jar_id))
                 return jar_id
             except HTTPError:
-                logger.warning("Unable to upload JAR to cluster")
+                logger.warning("Unable to upload JAR=<{}> to cluster".format(jar_path))
                 raise NotValidJARException("File at {} is not a valid JAR".format(jar_path))
 
     def job_info(self, job_id):
@@ -129,9 +130,14 @@ class FlinkJobmanagerConnector():
         return self.handle_response(requests.get(route))
 
     def submit_job(self, jar_path, target_dir=None, job_id=None):
-        logger.info("Submiting job to cluster")
-        logging.info("Job Parameters:\n\target_dir=<{}>\n\tjob_id=<{}>".format(target_dir, job_id))
+        job_params = {
+            "jar-path": jar_path,
+            "target-directory": target_dir,
+            "job-id": job_id
+        }
 
+        logger.info("Submiting job to cluster")
+        logging.info("Job Parameters=<>{}".format(job_params))
         if job_id is not None and target_dir is not None:
             logger.info("Triggering savepoint for job=<{}>".format(job_id))
             savepoint_path = self.cancel_job_with_savepoint(job_id, target_dir)
