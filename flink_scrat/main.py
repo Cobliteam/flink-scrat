@@ -29,6 +29,19 @@ def parse_args():
     submit_parser.add_argument("--job-id", dest="job_id", required=False,
                                help="Unique identifier for job to be restored")
 
+    submit_parser.add_argument("--parallelism", dest="parallelism", required=False,
+                               help="Number of parallelism for the job tasks")
+
+    submit_parser.add_argument("--entry-class", dest="entry_class", required=False,
+                               help="Main class for runnning the job")
+
+    submit_parser.add_argument("--allow-non-restore", dest="anr", required=False,
+                               help="If present allows job to start even if restore from savepoint fails")
+
+    submit_parser.add_argument("--extra-args", dest="extra", required=False,
+                               help="""Extra comma-separeted configuration options.
+                                See https://ci.apache.org/projects/flink/flink-docs-release-1.8/ops/config.html""")
+
     submit_parser.set_defaults(action="submit")
 
     cancel_parser = cmds.add_parser('cancel', help="Cancel a running job")
@@ -69,7 +82,8 @@ def main():
     conn = FlinkJobmanagerConnector(address, port)
 
     if action == "submit":
-        conn.submit_job(args.jar_path, args.target_dir, args.job_id)
+        conn.submit_job(args.jar_path, args.target_dir, args.job_id, args.anr,
+                        args.parallelism, args.entry_class, args.extra_args)
     elif action == "cancel":
         if args.savepoint is None:
             conn.cancel_job(args.job_id)
