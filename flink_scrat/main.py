@@ -31,6 +31,19 @@ def parse_args():
 
     submit_parser.set_defaults(action="submit")
 
+    cancel_parser = cmds.add_parser('cancel', help="Cancel a running job")
+
+    cancel_parser.add_argument("--s", dest="savepoint", required=False,
+                               help="Trigger a savepoint before canceling a job")
+
+    cancel_parser.add_argument("--target-dir", dest="target_dir", required=False,
+                               help="Target directory to log job savepoints")
+
+    cancel_parser.add_argument("--job-id", dest="job_id", required=False,
+                               help="Unique identifier for job to be restored")
+
+    cancel_parser.set_defaults(action="cancel")
+
     args = parser.parse_args()
     return args
 
@@ -47,6 +60,11 @@ def main():
 
     if action == "submit":
         conn.submit_job(args.jar_path, args.target_dir, args.job_id)
+    elif action == "cancel":
+        if args.savepoint is None:
+            conn.cancel_job(args.job_id)
+        else:
+            conn.cancel_job_with_savepoint(args.job_id, args.target_dir)
 
 
 if __name__ == "__main__":

@@ -156,12 +156,36 @@ class FlinkJobmanagerConnector():
 
         return response
 
+    def _is_job_running(self, job_id):
+        running_job_status = "RUNNING"
+        job_info = self.job_info(job_id)
+
+        return job_info["state"] == running_job_status
+
+    def _await_job_termination(self, job_id, max_retries=20):
+        for try_num in range(0, max_retries):
+            if self._is_job_running(job_id):
+                logger.debug(
+                    "Job is running. Try {}".format(try_num))
+                retry_sleep_seconds = 2
+                time.sleep(retry_sleep_seconds)
+                continue
+            else:
+                logging.info("Job canceled sucessfully")
+                return True
+
+        logger.warning("Cancel failed. Max retries exceded.")
+        raise MaxRetriesReachedException(
+            "Job=<{}> could not be canceled in time. Max retries=<{}> reached".format(job_id, max_retries))
+
     def cancel_job(self, job_id):
+        logging.info("Cancelling Job=<{}>".format(job_id))
+
         params = {"mode": "cancel"}
         route = "{}/jobs/{}".format(self.path, job_id)
 
         try:
-            return self.handle_response(requests.patch(route, params=params))
+            self.handle_response(requests.patch(route, params=params))
+            self._await_job_termination(job_id)
         except HTTPError:
-            logger.warning("Could not find job=<{}>".format(job_id))
-            return None
+            raise JobIdNotFoundException("Could not find job=<{}>".format(job_id))
