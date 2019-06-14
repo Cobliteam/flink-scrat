@@ -82,26 +82,16 @@ class FlinkJobmanagerConnector():
         except HTTPError as e:
             raise JobIdNotFoundException("Could not find JobId=<{}>. Reason=<{}>".format(job_id, e.response.text))
 
-    def run_job(self, jar_id, body=None):
+    def run_job(self, jar_id, job_params=None):
         logger.info("Starting job for deployed JAR=<{}>".format(jar_id))
         route = "{}/jars/{}/run".format(self.path, jar_id)
         try:
             response = self.handle_response(
-                requests.post(route, json=body))
+                requests.post(route, json=job_params))
             return response
         except HTTPError as e:
             raise JobRunFailedException("Unable to start running job from jar=<{}>. Reason=<{}>"
                                         .format(jar_id, e.response.text))
-
-    def run_job_from_savepoint(self, jar_id, savepoint_path):
-        logger.info("Restoring job from savepoint=<{}>".format(savepoint_path))
-        body = {
-            'savepointPath': savepoint_path
-        }
-
-        response = self.run_job(jar_id, body)
-
-        return response
 
     def savepoint_trigger_info(self, job_id, request_id):
         route = "{}/jobs/{}/savepoints/{}".format(
@@ -131,22 +121,36 @@ class FlinkJobmanagerConnector():
 
         return self.handle_response(requests.get(route))
 
-    def submit_job(self, jar_path, target_dir=None, job_id=None):
-        job_params = {
+    def _build_job_params(self, raw_params):
+        return {key: value for key, value in raw_params.items() if value is not None}
+
+    def submit_job(self, jar_path, target_dir=None, job_id=None, allow_non_restore=False,
+                   parallelism=1, entry_class=None, extra_args=None):
+        deploy_params = {
             "jar-path": jar_path,
             "target-directory": target_dir,
             "job-id": job_id
         }
 
         logger.info("Submiting job to cluster")
-        logging.info("Job Parameters=<>{}".format(job_params))
+        logging.info("Deploy Parameters=<>{}".format(deploy_params))
         if job_id is not None and target_dir is not None:
             logger.info("Triggering savepoint for job=<{}>".format(job_id))
             savepoint_path = self.cancel_job_with_savepoint(job_id, target_dir)
 
             if savepoint_path is not None:
+                job_params = self._build_job_params({
+                    "allowNonRestoredState": allow_non_restore,
+                    "programArg": extra_args,
+                    "parallelism": parallelism,
+                    "entryClass": entry_class,
+                    "savepointPath": savepoint_path
+                })
+
+                logging.info("Job Parameters=<>{}".format(job_params))
                 jar_id = self.submit_jar(jar_path)
-                return self.run_job_from_savepoint(jar_id, savepoint_path)
+
+                return self.run_job(jar_id, job_params)
 
         else:
             jar_id = self.submit_jar(jar_path)
