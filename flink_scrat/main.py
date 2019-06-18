@@ -50,7 +50,7 @@ def parse_args():
                                   help="Target directory to log job savepoints")
 
     savepoint_parser.add_argument("--job-id", dest="job_id", required=True,
-                                  help="Unique identifier for job to be restored")
+                                  help="Unique identifier for job to be snapshot")
 
     savepoint_parser.set_defaults(action="savepoint")
 
