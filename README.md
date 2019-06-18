@@ -21,13 +21,14 @@ python setup.py install
 ## Usage
 
 ```
-flink-scrat [-h] [--address ADDRESS] [--port PORT] {submit} ...
+usage: flink-scrat [-h] [--address ADDRESS] [--port PORT] {submit,cancel} ...
 
 A python client to deploy Flink applications to a remote cluster
 
 positional arguments:
-  {submit}           sub-command help
+  {submit,cancel}    sub-command help
     submit           Submit a job to the flink cluster
+    cancel           Cancel a running job
 
 optional arguments:
   -h, --help         show this help message and exit
@@ -48,4 +49,19 @@ optional arguments:
   --jar-path JAR_PATH   	Path for jar to be deployed
   --target-dir TARGET_DIR	Target directory to log job savepoints
   --job-id JOB_ID       	Unique identifier for job to be restored
+```
+
+### Cancel
+
+Cancels a run of a flink job. Use this command with the job id of the job you want to cancel. You can use the flag `--s` if you also wish to trigger a savepoint before shutdown.
+
+```
+usage: flink-scrat cancel [-h] [--s] [--target-dir TARGET_DIR] --job-id JOB_ID
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --s                   Trigger a savepoint before canceling a job
+  --target-dir TARGET_DIR
+                        Target directory to log job savepoints
+  --job-id JOB_ID       Unique identifier for job to be canceled
 ```
