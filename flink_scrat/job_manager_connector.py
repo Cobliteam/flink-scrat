@@ -31,8 +31,7 @@ class FlinkJobmanagerConnector():
 
         return response
 
-    def _await_savepoint_completion(self, job_id, request_id, max_retries=20):
-        retry_sleep_seconds = 2
+    def _await_savepoint_completion(self, job_id, request_id, max_retries=20, retry_sleep_seconds=2):
         in_progess_status = 'IN_PROGRESS'
         for try_num in range(0, max_retries):
             trigger_info = self.savepoint_trigger_info(job_id, request_id)
@@ -78,8 +77,8 @@ class FlinkJobmanagerConnector():
                 logger.info("Triggered savepoint for job=<{}>. Savepoint_request_id=<{}>".format(job_id, request_id))
 
                 return self._await_savepoint_completion(job_id, request_id)
-        except HTTPError:
-            raise JobIdNotFoundException("Could not find JobId=<{}>".format(job_id))
+        except HTTPError as e:
+            raise JobIdNotFoundException("Could not find JobId=<{}>. Reason=<{}>".format(job_id, e.message))
 
     def run_job(self, jar_id, body=None):
         logger.info("Starting job for deployed JAR=<{}>".format(jar_id))
@@ -88,8 +87,9 @@ class FlinkJobmanagerConnector():
             response = self.handle_response(
                 requests.post(route, json=body))
             return response
-        except HTTPError:
-            raise JobRunFailedException("Unable to start running job from jar=<{}>".format(jar_id))
+        except HTTPError as e:
+            raise JobRunFailedException("Unable to start running job from jar=<{}>. Reason=<{}>"
+                                        .format(jar_id, e.message))
 
     def run_job_from_savepoint(self, jar_id, savepoint_path):
         logger.info("Restoring job from savepoint=<{}>".format(savepoint_path))
@@ -162,14 +162,12 @@ class FlinkJobmanagerConnector():
 
         return job_info["state"] == running_job_status
 
-    def _await_job_termination(self, job_id, max_retries=20):
-        retry_sleep_seconds = 2
+    def _await_job_termination(self, job_id, max_retries=20, retry_sleep_seconds=2):
         for try_num in range(0, max_retries):
             if self._is_job_running(job_id):
                 logger.debug(
                     "Job is running. Try {}".format(try_num))
                 time.sleep(retry_sleep_seconds)
-                continue
             else:
                 logging.info("Job canceled sucessfully")
                 return True
@@ -186,6 +184,6 @@ class FlinkJobmanagerConnector():
 
         try:
             self.handle_response(requests.patch(route, params=params))
-            self._await_job_termination(job_id)
-        except HTTPError:
-            raise JobIdNotFoundException("Could not find job=<{}>".format(job_id))
+            return self._await_job_termination(job_id)
+        except HTTPError as e:
+            raise JobIdNotFoundException("Could not find job=<{}>. Reason=<{}>".format(job_id, e.message))

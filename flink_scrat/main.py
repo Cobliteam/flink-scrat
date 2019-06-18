@@ -39,8 +39,8 @@ def parse_args():
     cancel_parser.add_argument("--target-dir", dest="target_dir", required=False,
                                help="Target directory to log job savepoints")
 
-    cancel_parser.add_argument("--job-id", dest="job_id", required=False,
-                               help="Unique identifier for job to be restored")
+    cancel_parser.add_argument("--job-id", dest="job_id", required=True,
+                               help="Unique identifier for job to be canceled")
 
     cancel_parser.set_defaults(action="cancel")
 

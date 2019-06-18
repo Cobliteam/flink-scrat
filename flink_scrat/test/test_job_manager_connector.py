@@ -4,7 +4,7 @@ import time
 import randompy
 
 from flink_scrat.job_manager_connector import FlinkJobmanagerConnector
-from flink_scrat.exceptions import NotValidJARException, JobIdNotFoundException
+from flink_scrat.exceptions import NotValidJARException, JobIdNotFoundException, MaxRetriesReachedException
 from nose.tools import assert_equal, assert_is_none, assert_raises, assert_is_not_none
 from unittest import TestCase
 
@@ -18,10 +18,21 @@ JAR_PATH = os.path.join(TEST_DIR, "resources/" + JAR_NAME)
 NOT_A_JAR = tempfile.NamedTemporaryFile()
 
 
+def _await_is_job_running(connector, job_id, max_retries=20, retry_sleep_seconds=2):
+    for try_num in range(0, max_retries):
+        time.sleep(retry_sleep_seconds)
+        if not connector._is_job_running(job_id):
+            continue
+        else:
+            return True
+
+    raise MaxRetriesReachedException()
+
+
 class FlinkJobmanagerConnectorSpec(TestCase):
     def setUp(self):
         self.connector = FlinkJobmanagerConnector(FLINK_ADDRESS, FLINK_PORT)
-        self.savepoint_dir = "/tmp/savepoint"
+        self.savepoint_dir = "/tmp/savepoints"
 
     def tearDown(self):
         test_jobs = self.connector.list_jobs()
@@ -77,27 +88,29 @@ class FlinkJobmanagerConnectorSpec(TestCase):
     def test_cancel_job(self):
         response_json = self.connector.submit_job(JAR_PATH)
         job_id = response_json["jobid"]
-        time.sleep(5)
+        is_running = _await_is_job_running(self.connector, job_id)
 
-        self.connector.cancel_job(job_id)
-        assert_equal(self.connector._is_job_running(job_id), False)
+        if is_running:
+            self.connector.cancel_job(job_id)
+            assert_equal(self.connector._is_job_running(job_id), False)
 
     def test_cancel_job_with_savepoint(self):
         response_json = self.connector.submit_job(JAR_PATH)
         job_id = response_json["jobid"]
-        time.sleep(5)
+        is_running = _await_is_job_running(self.connector, job_id)
 
-        savepoint_trigger = self.connector.cancel_job_with_savepoint(job_id, self.savepoint_dir)
-        assert_is_not_none(savepoint_trigger)
+        if is_running:
+            savepoint_path = self.connector.cancel_job_with_savepoint(job_id, self.savepoint_dir)
+            assert_is_not_none(savepoint_path)
+            assert_equal(self.savepoint_dir in savepoint_path, True)
 
-    def test_cancel_job_with__no_job_id(self):
+    def test_cancel_job_with_invalid_job_id(self):
         job_id = randompy.string(10)
         with assert_raises(JobIdNotFoundException):
-            savepoint_trigger = self.connector.cancel_job(job_id)
-            assert_is_none(savepoint_trigger)
+            self.connector.cancel_job(job_id)
 
-    def test_cancel_job_with_savepoint_no_jobid(self):
+    def test_cancel_job_with_savepoint_invalid_job_id(self):
         job_id = randompy.string(10)
         with assert_raises(JobIdNotFoundException):
-            savepoint_trigger = self.connector.cancel_job_with_savepoint(job_id, self.savepoint_dir)
-            assert_is_none(savepoint_trigger)
+            savepoint_path = self.connector.cancel_job_with_savepoint(job_id, self.savepoint_dir)
+            assert_is_none(savepoint_path)
