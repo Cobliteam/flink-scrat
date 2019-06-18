@@ -53,7 +53,7 @@ optional arguments:
 
 ### Cancel
 
-Cancels a run of a flink job. Use this command with the job id of the job you want to cancel. You can use the flag `-s` if you also with to trigger a savepoint before shutdown.
+Cancels a run of a flink job. Use this command with the job id of the job you want to cancel. You can use the flag `--s` if you also wish to trigger a savepoint before shutdown.
 
 ```
 usage: flink-scrat cancel [-h] [--s] [--target-dir TARGET_DIR] --job-id JOB_ID

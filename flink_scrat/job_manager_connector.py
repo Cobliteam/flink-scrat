@@ -78,7 +78,7 @@ class FlinkJobmanagerConnector():
 
                 return self._await_savepoint_completion(job_id, request_id)
         except HTTPError as e:
-            raise JobIdNotFoundException("Could not find JobId=<{}>. Reason=<{}>".format(job_id, e.message))
+            raise JobIdNotFoundException("Could not find JobId=<{}>. Reason=<{}>".format(job_id, e.response.text))
 
     def run_job(self, jar_id, body=None):
         logger.info("Starting job for deployed JAR=<{}>".format(jar_id))
@@ -89,7 +89,7 @@ class FlinkJobmanagerConnector():
             return response
         except HTTPError as e:
             raise JobRunFailedException("Unable to start running job from jar=<{}>. Reason=<{}>"
-                                        .format(jar_id, e.message))
+                                        .format(jar_id, e.response.text))
 
     def run_job_from_savepoint(self, jar_id, savepoint_path):
         logger.info("Restoring job from savepoint=<{}>".format(savepoint_path))
@@ -186,4 +186,4 @@ class FlinkJobmanagerConnector():
             self.handle_response(requests.patch(route, params=params))
             return self._await_job_termination(job_id)
         except HTTPError as e:
-            raise JobIdNotFoundException("Could not find job=<{}>. Reason=<{}>".format(job_id, e.message))
+            raise JobIdNotFoundException("Could not find job=<{}>. Reason=<{}>".format(job_id, e.response.text))
