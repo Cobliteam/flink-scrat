@@ -193,3 +193,44 @@ class FlinkJobmanagerConnector():
             return self._await_job_termination(job_id)
         except HTTPError as e:
             raise JobIdNotFoundException("Could not find job=<{}>. Reason=<{}>".format(job_id, e.response.text))
+
+    def _find_address(self, cluster_address, cluster_port, session_name):
+        apps_info = self._get_apps_info(cluster_address, cluster_port)
+
+        running_app = self._get_running_app(apps_info, session_name)
+
+        rpc_addres_info = self._build_rpc_address_info(running_app)
+
+        return rpc_addres_info
+
+    def _get_apps_info(self, cluster_address, cluster_port):
+        route = "http://{}:{}/ws/v1/cluster/apps".format(cluster_address, cluster_port)
+        
+        result = requests.get(route)
+        result.raise_for_status()
+
+        apps_info = result.json()['apps']['app']
+
+        return apps_info
+
+    def _get_running_app(self, apps_info, session_name):
+        running_apps = list(filter(lambda x: x['state'] == 'RUNNING' and x['name'] == session_name, apps_info))
+
+        if len(running_apps) == 0:
+            raise Exception("No app found with state=<RUNNING> and name=<{}>".format(session_name))
+        elif len(running_apps) > 1:
+            raise Exception("More then one app found with state=<RUNNING> and name=<{}>".format(session_name))
+
+        running_app = running_apps[0]
+
+        return running_app
+
+    def _build_rpc_address_info(self, running_app):
+        rpc_address, rpc_port = running_app['amRPCAddress'].split(":")
+
+        rpc_info = {
+            "rpc_address": rpc_address,
+            "rpc_port": rpc_port
+        }
+
+        return rpc_info
