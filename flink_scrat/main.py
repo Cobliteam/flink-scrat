@@ -10,10 +10,22 @@ logger = logging.getLogger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description="A python client to deploy Flink applications to a remote cluster")
 
-    parser.add_argument("--address", dest="address", required=False, default='localhost',
+    address_group = parser.add_mutually_exclusive_group()
+    port_group = parser.add_mutually_exclusive_group()
+
+    parser.add_argument("--session-name", dest="session_name", required=False,
+                        help="bla")
+    
+    address_group.add_argument("--session-address", dest="session_address", required=False,
+                        help="Address for Flink Session")
+
+    port_group.add_argument("--session-port", dest="session_port", required=False,
+                        help="Port for Flink Session")
+
+    address_group.add_argument("--address", dest="address", required=False, default='localhost',
                         help="Address for Flink JobManager")
 
-    parser.add_argument("--port", dest="port", required=False, default=8081,
+    port_group.add_argument("--port", dest="port", required=False, default=8081,
                         help="Port for Flink JobManager (default 8081)")
 
     cmds = parser.add_subparsers(help="sub-command help")
@@ -68,6 +80,13 @@ def parse_args():
     savepoint_parser.set_defaults(action="savepoint")
 
     args = parser.parse_args()
+
+    if ('session_name' in vars(args) and ('session_address' or 'session_port' not in vars(args))):
+        parser.error("When passing --session-name, --session-address and --session-port must be passed.")
+    elif ('session_name' not in vars(args) and ('session_address' or 'session_port' in vars(args))):
+        parser.error("--session-address nor --session-port can be passed without --session_name. \
+                    Please use --address and --port instead.")
+
     return args
 
 
