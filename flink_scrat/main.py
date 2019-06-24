@@ -14,7 +14,8 @@ def parse_args():
     port_group = parser.add_mutually_exclusive_group()
 
     parser.add_argument("--session-name", dest="session_name", required=False,
-                        help="bla")
+                        help="Name of Flink session. If provided, must provide \
+                        --address and --port as well")
     
     address_group.add_argument("--session-address", dest="session_address", required=False,
                         help="Address for Flink Session")
@@ -81,11 +82,11 @@ def parse_args():
 
     args = parser.parse_args()
 
-    if ('session_name' in vars(args) and ('session_address' or 'session_port' not in vars(args))):
-        parser.error("When passing --session-name, --session-address and --session-port must be passed.")
-    elif ('session_name' not in vars(args) and ('session_address' or 'session_port' in vars(args))):
-        parser.error("--session-address nor --session-port can be passed without --session_name. \
-                    Please use --address and --port instead.")
+    if 'session_name' in vars(args) and ('address' or 'port' not in vars(args)):
+        parser.error("When passing --session-name, --address and --port must be passed.")
+    elif 'session_name' not in vars(args) and ('address' or 'port' in vars(args)):
+        parser.error("--address nor --port can be passed without --session_name. \
+                    Please use --session-address and --session-port instead.")
 
     return args
 
@@ -94,11 +95,19 @@ def main():
     setup_logging()
     args = parse_args()
 
-    address = args.address
-    port = args.port
-    action = args.action
+    if 'session_name' in vars(args):
+        manager_address = args.address
+        manager_port = args.port
+        session_name = args.session_name
 
-    conn = FlinkJobmanagerConnector(address, port)
+        conn = FlinkJobmanagerConnector(manager_address, manager_port, session_name)
+    else:
+        session_address = args.session_address
+        session_port = args.session_port
+
+        conn = FlinkJobmanagerConnector(session_address, session_port, None)
+        
+    action = args.action
 
     if action == "submit":
         conn.submit_job(args.jar_path, args.target_dir, args.job_id, args.anr,
