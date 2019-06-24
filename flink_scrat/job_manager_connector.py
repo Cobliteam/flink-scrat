@@ -12,13 +12,13 @@ logger = logging.getLogger(__name__)
 
 class FlinkJobmanagerConnector():
 
-    def __init__(self, address, port, session_name):
-        if session_name is None:
-            self.path = "http://{}:{}".format(address, port)
-        else:
-            rpc_info = self._find_address(address, port, session_name)
+    def __init__(self, address, port, use_yarn, app_name=None):
+        if use_yarn == True:
+            rpc_info = self._find_address(address, port, app_name)
             
             self.path = "http://{}:{}".format(rpc_info['rpc_address'] , rpc_info['rpc_port'])
+        else:
+            self.path = "http://{}:{}".format(address, port)
 
     def handle_response(self, req_response):
         req_response.raise_for_status()

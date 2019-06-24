@@ -13,15 +13,19 @@ def parse_args():
     address_group = parser.add_mutually_exclusive_group()
     port_group = parser.add_mutually_exclusive_group()
 
-    parser.add_argument("--session-name", dest="session_name", required=False,
-                        help="Name of Flink session. If provided, must provide \
-                        --address and --port as well")
+    parser.add_argument("--y", dest="use_yarn", required=False, default=False, action='store_true',
+                        help="If set, flink-scrat will use the {--app-name; --yarn-address; --yarn-port} to try to find \
+                        the correct yarn-session info. Otherwise, it will assume that the correct JobManager info is \
+                        provided in {--address; --port}")
     
-    address_group.add_argument("--session-address", dest="session_address", required=False,
-                        help="Address for Flink Session")
+    parser.add_argument("--app-name", dest="app_name", required=False,
+                        help="Name of Flink yarn-session")
+    
+    address_group.add_argument("--yarn-address", dest="yarn_address", required=False,
+                        help="Address for the yarn manager")
 
-    port_group.add_argument("--session-port", dest="session_port", required=False,
-                        help="Port for Flink Session")
+    port_group.add_argument("--yarn-port", dest="yarn_port", required=False,
+                        help="Port for the yarn manager")
 
     address_group.add_argument("--address", dest="address", required=False, default='localhost',
                         help="Address for Flink JobManager")
@@ -82,11 +86,8 @@ def parse_args():
 
     args = parser.parse_args()
 
-    if 'session_name' in vars(args) and ('address' or 'port' not in vars(args)):
-        parser.error("When passing --session-name, --address and --port must be passed.")
-    elif 'session_name' not in vars(args) and ('address' or 'port' in vars(args)):
-        parser.error("--address nor --port can be passed without --session_name. \
-                    Please use --session-address and --session-port instead.")
+    if args.use_yarn == True and ("app_name" not in vars(args) or "yarn_address" not in vars(args) or "yarn_port" not in vars(args)):
+        parser.error("When setting --y, {--app-name; --yarn-address; --yarn-port} must be provided")
 
     return args
 
@@ -95,17 +96,19 @@ def main():
     setup_logging()
     args = parse_args()
 
-    if 'session_name' in vars(args):
+    use_yarn = args.use_yarn
+
+    if use_yarn == True:
+        yarn_address = args.yarn_address
+        yarn_port = args.yarn_port
+        app_name = args.app_name
+
+        conn = FlinkJobmanagerConnector(yarn_address, yarn_port, use_yarn, app_name=app_name)
+    else:
         manager_address = args.address
         manager_port = args.port
-        session_name = args.session_name
 
-        conn = FlinkJobmanagerConnector(manager_address, manager_port, session_name)
-    else:
-        session_address = args.session_address
-        session_port = args.session_port
-
-        conn = FlinkJobmanagerConnector(session_address, session_port, None)
+        conn = FlinkJobmanagerConnector(manager_address, manager_port, use_yarn)
         
     action = args.action
 
