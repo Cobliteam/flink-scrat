@@ -21,7 +21,7 @@ python setup.py install
 ## Usage
 
 ```
-usage: flink-scrat [-h] [--address ADDRESS] [--port PORT] {submit,cancel} ...
+usage: flink-scrat [-h] [--session-name SESSION_NAME] [--address ADDRESS || --session-address SESSION_ADDRESS] [--port PORT || --session-port SESSION_PORT] {submit,cancel} ...
 
 A python client to deploy Flink applications to a remote cluster
 
@@ -32,9 +32,15 @@ positional arguments:
 
 optional arguments:
   -h, --help         show this help message and exit
-  --address ADDRESS  Address for Flink JobManager
-  --port PORT        Port for Flink JobManager (default 8081)
+  --address ADDRESS                  Address for Flink JobManager
+  --session-address SESSION_ADDRESS  Address for Flink session
+  --port PORT                        Port for Flink JobManager (default 8081)
+  --session-port SESSION_PORT        Port for Flink session
 ```
+
+If `--session-name` is provided, it is necessary to provide `--session-address` and `--session-port`. Otherwise, `address` and `port` may be provided instead.
+
+`--session-address` and `address` are mutually exclusive, as well as `--session-port` and `--port`.
 
 ### Submit
 
