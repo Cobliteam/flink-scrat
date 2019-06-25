@@ -65,3 +65,17 @@ optional arguments:
                         Target directory to log job savepoints
   --job-id JOB_ID       Unique identifier for job to be canceled
 ```
+
+### Savepoint
+
+Triggers a savepoint for a running job without cancelling it
+
+```
+usage: flink-scrat savepoint [-h] --target-dir TARGET_DIR --job-id JOB_ID
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --target-dir TARGET_DIR
+                        Target directory to log job savepoints
+  --job-id JOB_ID       Unique identifier for job to be snapshot
+```

@@ -29,6 +29,14 @@ def _await_is_job_running(connector, job_id, max_retries=20, retry_sleep_seconds
     raise MaxRetriesReachedException()
 
 
+def submit_job_and_await_running(connector, jar_path):
+    response_json = connector.submit_job(jar_path)
+    job_id = response_json["jobid"]
+    _await_is_job_running(connector, job_id)
+
+    return job_id
+
+
 class FlinkJobmanagerConnectorSpec(TestCase):
     def setUp(self):
         self.connector = FlinkJobmanagerConnector(FLINK_ADDRESS, FLINK_PORT)
@@ -86,23 +94,25 @@ class FlinkJobmanagerConnectorSpec(TestCase):
             assert_is_none(not_a_jar_response_json)
 
     def test_cancel_job(self):
-        response_json = self.connector.submit_job(JAR_PATH)
-        job_id = response_json["jobid"]
-        is_running = _await_is_job_running(self.connector, job_id)
+        job_id = submit_job_and_await_running(self.connector, JAR_PATH)
 
-        if is_running:
-            self.connector.cancel_job(job_id)
-            assert_equal(self.connector._is_job_running(job_id), False)
+        self.connector.cancel_job(job_id)
+        assert_equal(self.connector._is_job_running(job_id), False)
+
+    def test_trigger_savepoint(self):
+        job_id = submit_job_and_await_running(self.connector, JAR_PATH)
+
+        savepoint_path = self.connector.trigger_savepoint(job_id, self.savepoint_dir)
+        assert_is_not_none(savepoint_path)
+        assert_equal(self.savepoint_dir in savepoint_path, True)
 
     def test_cancel_job_with_savepoint(self):
-        response_json = self.connector.submit_job(JAR_PATH)
-        job_id = response_json["jobid"]
-        is_running = _await_is_job_running(self.connector, job_id)
+        job_id = submit_job_and_await_running(self.connector, JAR_PATH)
 
-        if is_running:
-            savepoint_path = self.connector.cancel_job_with_savepoint(job_id, self.savepoint_dir)
-            assert_is_not_none(savepoint_path)
-            assert_equal(self.savepoint_dir in savepoint_path, True)
+        savepoint_path = self.connector.cancel_job_with_savepoint(job_id, self.savepoint_dir)
+        assert_is_not_none(savepoint_path)
+        assert_equal(self.savepoint_dir in savepoint_path, True)
+        assert_equal(self.connector._await_job_termination(job_id), True)
 
     def test_cancel_job_with_invalid_job_id(self):
         job_id = randompy.string(10)

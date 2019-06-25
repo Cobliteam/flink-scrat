@@ -53,7 +53,6 @@ class FlinkJobmanagerConnector():
                 else:
                     savepoint_path = savepoint_result['location']
                     logger.info("Savepoint completed path=<{}>. Job Cancelled".format(savepoint_path))
-
                     return savepoint_path
 
         logger.warning("Savepoint failed. Max retries exceded.")
@@ -61,12 +60,15 @@ class FlinkJobmanagerConnector():
             "Savepoint was not completed in time. Max retries=<{}> reached".format(max_retries))
 
     def cancel_job_with_savepoint(self, job_id, target_dir):
+        return self.trigger_savepoint(job_id, target_dir, cancel_job=True)
+
+    def trigger_savepoint(self, job_id, target_dir, cancel_job=False):
         logger.info("Cancelling Job=<{}> and adding savepoit to savepoint_path=<{}>".format(job_id, target_dir))
         route = "{}/jobs/{}/savepoints/".format(self.path, job_id)
 
         body = {
             "target-directory": target_dir,
-            "cancel-job": True
+            "cancel-job": cancel_job
         }
 
         try:

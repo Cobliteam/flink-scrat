@@ -44,6 +44,16 @@ def parse_args():
 
     cancel_parser.set_defaults(action="cancel")
 
+    savepoint_parser = cmds.add_parser('savepoint', help="Trigger a savepoint for a running Job")
+
+    savepoint_parser.add_argument("--target-dir", dest="target_dir", required=True,
+                                  help="Target directory to log job savepoints")
+
+    savepoint_parser.add_argument("--job-id", dest="job_id", required=True,
+                                  help="Unique identifier for job to be snapshot")
+
+    savepoint_parser.set_defaults(action="savepoint")
+
     args = parser.parse_args()
     return args
 
@@ -65,6 +75,9 @@ def main():
             conn.cancel_job(args.job_id)
         else:
             conn.cancel_job_with_savepoint(args.job_id, args.target_dir)
+    elif action == "savepoint":
+        savepoint_path = conn.trigger_savepoint(args.job_id, args.target_dir)
+        logging.info("Savepoint completed at <{}> for Job=<{}>".format(savepoint_path, args.job_id))
 
 
 if __name__ == "__main__":
