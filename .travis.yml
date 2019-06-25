@@ -14,3 +14,13 @@ install:
 script:
   - python setup.py test
   
+jobs:
+  include:
+    - stage: deploy
+      script: skip
+      deploy:
+        - provider: script
+          script: /release.sh release
+          skip_cleanup: yes
+          on:
+            branch: master
