@@ -20,7 +20,7 @@ jobs:
       script: skip
       deploy:
         - provider: script
-          script: /release.sh release
+          script: release.sh release
           skip_cleanup: yes
           on:
             branch: master
