@@ -21,7 +21,7 @@ python setup.py install
 ## Usage
 
 ```
-usage: flink-scrat [-h] [--session-name SESSION_NAME] [--address ADDRESS || --session-address SESSION_ADDRESS] [--port PORT || --session-port SESSION_PORT] {submit,cancel} ...
+usage: flink-scrat [-h] [--y] [--app-name APP_NAME] [--address ADDRESS || --yarn-address YARN_ADDRESS] [--port PORT || --yarn-port YARN_PORT] {submit,cancel} ...
 
 A python client to deploy Flink applications to a remote cluster
 
@@ -32,15 +32,19 @@ positional arguments:
 
 optional arguments:
   -h, --help         show this help message and exit
+  --y                                If set, flink-scrat will use the {--app-name; --yarn-
+                                     address; --yarn-port} to try to find the correct yarn-
+                                     session info. Otherwise, it will assume that the
+                                     correct JobManager info is provided in {--address; --port}
   --address ADDRESS                  Address for Flink JobManager
-  --session-address SESSION_ADDRESS  Address for Flink session
+  --yarn-address YARN_ADDRESS        Address for yarn manager
   --port PORT                        Port for Flink JobManager (default 8081)
-  --session-port SESSION_PORT        Port for Flink session
+  --yarn-port YARN_PORT              Port for yarn manager
 ```
 
-If `--session-name` is provided, it is necessary to provide `--session-address` and `--session-port`. Otherwise, `address` and `port` may be provided instead.
+If `--y` is set, it is necessary to provide `--app-name`, `--yarn-address` and `--yarn-port`. Otherwise, `address` and `port` may be provided instead.
 
-`--session-address` and `address` are mutually exclusive, as well as `--session-port` and `--port`.
+`--yarn-address` and `address` are mutually exclusive, as well as `--yarn-port` and `--port`.
 
 ### Submit
 
