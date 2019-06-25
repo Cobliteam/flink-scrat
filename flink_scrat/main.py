@@ -3,6 +3,7 @@ import logging
 
 from flink_scrat.utils import setup_logging
 from flink_scrat.job_manager_connector import FlinkJobmanagerConnector
+from flink_scrat.utils import find_manager_address
 
 logger = logging.getLogger(__name__)
 
@@ -85,8 +86,8 @@ def parse_args():
     savepoint_parser.set_defaults(action="savepoint")
 
     args = parser.parse_args()
-
-    if args.use_yarn == True and ("app_name" not in vars(args) or "yarn_address" not in vars(args) or "yarn_port" not in vars(args)):
+    
+    if args.use_yarn == True and (args.app_name is None or args.yarn_address is None or args.yarn_port is None):
         parser.error("When setting --y, {--app-name; --yarn-address; --yarn-port} must be provided")
 
     return args
@@ -99,16 +100,15 @@ def main():
     use_yarn = args.use_yarn
 
     if use_yarn == True:
-        yarn_address = args.yarn_address
-        yarn_port = args.yarn_port
-        app_name = args.app_name
+        yarn_info = find_manager_address(args.yarn_address, args.yarn_port, args.app_name)
 
-        conn = FlinkJobmanagerConnector(yarn_address, yarn_port, use_yarn, app_name=app_name)
+        manager_address = yarn_info['rpc_address'] 
+        manager_port = yarn_info['rpc_port']
     else:
         manager_address = args.address
         manager_port = args.port
 
-        conn = FlinkJobmanagerConnector(manager_address, manager_port, use_yarn)
+    conn = FlinkJobmanagerConnector(manager_address, manager_port)
         
     action = args.action
 
