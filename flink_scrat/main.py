@@ -9,34 +9,36 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="A python client to deploy Flink applications to a remote cluster")
+    parser = argparse.ArgumentParser(
+        description="A python client to deploy Flink applications to a remote cluster")
 
     address_group = parser.add_mutually_exclusive_group()
     port_group = parser.add_mutually_exclusive_group()
 
     parser.add_argument("--y", dest="use_yarn", required=False, default=False, action='store_true',
-                        help="If set, flink-scrat will use the {--app-name; --yarn-address; --yarn-port} to try to find \
-                        the correct yarn-session info. Otherwise, it will assume that the correct JobManager info is \
-                        provided in {--address; --port}")
-    
+                        help="If set, flink-scrat willasdasd use the {--app-name; --yarn-address; --yarn-port} \
+                        to try finding the correct yarn-session info. Otherwise, it will assume that the correct \
+                        JobManager info is provided in {--address; --port}")
+
     parser.add_argument("--app-name", dest="app_name", required=False,
                         help="Name of Flink yarn-session")
-    
+
     address_group.add_argument("--yarn-address", dest="yarn_address", required=False,
-                        help="Address for the yarn manager")
+                               help="Address for the yarnmanager")
 
     port_group.add_argument("--yarn-port", dest="yarn_port", required=False,
-                        help="Port for the yarn manager")
+                            help="Port for the yarn manager")
 
     address_group.add_argument("--address", dest="address", required=False, default='localhost',
-                        help="Address for Flink JobManager")
+                               help="Address for Flink JobManager")
 
     port_group.add_argument("--port", dest="port", required=False, default=8081,
-                        help="Port for Flink JobManager (default 8081)")
+                            help="Port for Flink JobManager (default 8081)")
 
     cmds = parser.add_subparsers(help="sub-command help")
 
-    submit_parser = cmds.add_parser('submit', help="Submit a job to the flink cluster")
+    submit_parser = cmds.add_parser(
+        'submit', help="Submit a job to the flink cluster")
 
     submit_parser.add_argument("--jar-path", dest="jar_path", required=True,
                                help="Path for jar to be deployed")
@@ -75,7 +77,8 @@ def parse_args():
 
     cancel_parser.set_defaults(action="cancel")
 
-    savepoint_parser = cmds.add_parser('savepoint', help="Trigger a savepoint for a running Job")
+    savepoint_parser = cmds.add_parser(
+        'savepoint', help="Trigger a savepoint for a running Job")
 
     savepoint_parser.add_argument("--target-dir", dest="target_dir", required=True,
                                   help="Target directory to log job savepoints")
@@ -86,9 +89,10 @@ def parse_args():
     savepoint_parser.set_defaults(action="savepoint")
 
     args = parser.parse_args()
-    
-    if args.use_yarn == True and (args.app_name is None or args.yarn_address is None or args.yarn_port is None):
-        parser.error("When setting --y, {--app-name; --yarn-address; --yarn-port} must be provided")
+
+    if args.use_yarn is True and (args.app_name is None or args.yarn_address is None or args.yarn_port is None):
+        parser.error(
+            "When setting --y, {--app-name; --yarn-address; --yarn-port} must be provided")
 
     return args
 
@@ -99,17 +103,18 @@ def main():
 
     use_yarn = args.use_yarn
 
-    if use_yarn == True:
-        yarn_info = find_manager_address(args.yarn_address, args.yarn_port, args.app_name)
+    if use_yarn is True:
+        yarn_info = find_manager_address(
+            args.yarn_address, args.yarn_port, args.app_name)
 
-        manager_address = yarn_info['rpc_address'] 
+        manager_address = yarn_info['rpc_address']
         manager_port = yarn_info['rpc_port']
     else:
         manager_address = args.address
         manager_port = args.port
 
     conn = FlinkJobmanagerConnector(manager_address, manager_port)
-        
+
     action = args.action
 
     if action == "submit":
@@ -122,7 +127,8 @@ def main():
             conn.cancel_job_with_savepoint(args.job_id, args.target_dir)
     elif action == "savepoint":
         savepoint_path = conn.trigger_savepoint(args.job_id, args.target_dir)
-        logging.info("Savepoint completed at <{}> for Job=<{}>".format(savepoint_path, args.job_id))
+        logging.info("Savepoint completed at <{}> for Job=<{}>".format(
+            savepoint_path, args.job_id))
 
 
 if __name__ == "__main__":

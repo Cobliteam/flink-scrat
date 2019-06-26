@@ -32,9 +32,11 @@ def setup_logging():
     else:
         logging.basicConfig(level=default_level)
 
+
 def handle_response(req_response):
         req_response.raise_for_status()
         return req_response.json()
+
 
 def find_manager_address(yarn_address, yarn_port, app_name):
     apps_info = _get_apps_info(yarn_address, yarn_port)
@@ -45,14 +47,16 @@ def find_manager_address(yarn_address, yarn_port, app_name):
 
     return rpc_addres_info
 
+
 def _get_apps_info(yarn_address, yarn_port):
     route = "http://{}:{}/ws/v1/cluster/apps".format(yarn_address, yarn_port)
-    
+
     result = handle_response(requests.get(route))
 
     apps_info = result['apps']['app']
 
     return apps_info
+
 
 def _get_running_app(apps_info, app_name):
     running_apps = list(filter(lambda x: x['state'] == 'RUNNING' and x['name'] == app_name, apps_info))
@@ -65,6 +69,7 @@ def _get_running_app(apps_info, app_name):
     running_app = running_apps[0]
 
     return running_app
+
 
 def _build_rpc_address_info(running_app):
     rpc_address, rpc_port = running_app['amRPCAddress'].split(":")
