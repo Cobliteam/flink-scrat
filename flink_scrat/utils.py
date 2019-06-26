@@ -5,6 +5,7 @@ import requests
 
 from envparse import env
 from logging import CRITICAL, ERROR, DEBUG, INFO, WARN
+from flink_scrat.exceptions import (NoAppsFoundException, MultipleAppsFoundException)
 
 
 def setup_logging():
@@ -62,9 +63,9 @@ def _get_running_app(yarn_address, yarn_port, app_id):
 
     if num_running_apps != 1:
         if num_running_apps == 0:
-            raise Exception("No app found with state=<RUNNING> and tag=<{}>".format(app_id))
+            raise NoAppsFoundException("No app found with state=<RUNNING> and tag=<{}>".format(app_id))
         else:
-            raise Exception("More then one app found with state=<RUNNING> and tag=<{}>".format(app_id))
+            raise MultipleAppsFoundException("More then one app found with state=<RUNNING> and tag=<{}>".format(app_id))
 
     running_app = running_apps_info[0]
 

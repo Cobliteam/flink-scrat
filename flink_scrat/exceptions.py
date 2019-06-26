@@ -17,3 +17,10 @@ class JobRunFailedException(Exception):
 
 class JobIdNotFoundException(Exception):
     pass
+
+
+class NoAppsFoundException(Exception):
+    pass
+
+class MultipleAppsFoundException(Exception):
+    pass
