@@ -16,7 +16,7 @@ def parse_args():
     port_group = parser.add_mutually_exclusive_group()
 
     parser.add_argument("--y", dest="use_yarn", required=False, default=False, action='store_true',
-                        help="If set, flink-scrat willasdasd use the {--app-name; --yarn-address; --yarn-port} \
+                        help="If set, flink-scrat will use the {--app-name; --yarn-address; --yarn-port} \
                         to try finding the correct yarn-session info. Otherwise, it will assume that the correct \
                         JobManager info is provided in {--address; --port}")
 

@@ -42,9 +42,9 @@ optional arguments:
   --yarn-port YARN_PORT              Port for yarn manager
 ```
 
-If `--y` is set, it is necessary to provide `--app-name`, `--yarn-address` and `--yarn-port`. Otherwise, `address` and `port` may be provided instead.
+If `--y` is set, it is necessary to provide `--app-name`, `--yarn-address` and `--yarn-port`. Otherwise, `address` and `port` should be provided instead.
 
-`--yarn-address` and `address` are mutually exclusive, as well as `--yarn-port` and `--port`.
+`--yarn-address` and `--address` are mutually exclusive, as well as `--yarn-port` and `--port`.
 
 ### Submit
 
