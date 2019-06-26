@@ -38,20 +38,20 @@ def handle_response(req_response):
         return req_response.json()
 
 
-def find_manager_address(yarn_address, yarn_port, app_name):
-    running_app = _get_running_app(yarn_address, yarn_port, app_name)
+def find_manager_address(yarn_address, yarn_port, app_id):
+    running_app = _get_running_app(yarn_address, yarn_port, app_id)
 
     rpc_addres_info = _build_rpc_address_info(running_app)
 
     return rpc_addres_info
 
 
-def _get_running_app(yarn_address, yarn_port, app_name):
+def _get_running_app(yarn_address, yarn_port, app_id):
     route = 'http://{}:{}/ws/v1/cluster/apps'.format(yarn_address, yarn_port)
 
     params = {
         'states': ["RUNNING"],
-        'applicationTags': ["{}".format(app_name)],
+        'applicationTags': ["{}".format(app_id)],
         'limit': 2
     }
 
@@ -62,9 +62,9 @@ def _get_running_app(yarn_address, yarn_port, app_name):
 
     if num_running_apps != 1:
         if num_running_apps == 0:
-            raise Exception("No app found with state=<RUNNING> and tag=<{}>".format(app_name))
+            raise Exception("No app found with state=<RUNNING> and tag=<{}>".format(app_id))
         else:
-            raise Exception("More then one app found with state=<RUNNING> and tag=<{}>".format(app_name))
+            raise Exception("More then one app found with state=<RUNNING> and tag=<{}>".format(app_id))
 
     running_app = running_apps_info[0]
 

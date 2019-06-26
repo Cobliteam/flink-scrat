@@ -16,15 +16,16 @@ def parse_args():
     port_group = parser.add_mutually_exclusive_group()
 
     parser.add_argument("--y", dest="use_yarn", required=False, default=False, action='store_true',
-                        help="If set, flink-scrat will use the {--app-name; --yarn-address; --yarn-port} \
+                        help="If set, flink-scrat will use the {--app-id; --yarn-address; --yarn-port} \
                         to try finding the correct yarn-session info. Otherwise, it will assume that the correct \
                         JobManager info is provided in {--address; --port}")
 
-    parser.add_argument("--app-name", dest="app_name", required=False,
-                        help="Name of Flink yarn-session")
+    parser.add_argument("--app-id", dest="app_id", required=False, default="",
+                        help="Identifier tag for the Flink yarn-session. If not set, it will be assumed that \
+                        the yarn-session has no identifier")
 
     address_group.add_argument("--yarn-address", dest="yarn_address", required=False,
-                               help="Address for the yarnmanager")
+                               help="Address for the yarn manager")
 
     port_group.add_argument("--yarn-port", dest="yarn_port", required=False,
                             help="Port for the yarn manager")
@@ -37,8 +38,7 @@ def parse_args():
 
     cmds = parser.add_subparsers(help="sub-command help")
 
-    submit_parser = cmds.add_parser(
-        'submit', help="Submit a job to the flink cluster")
+    submit_parser = cmds.add_parser('submit', help="Submit a job to the flink cluster")
 
     submit_parser.add_argument("--jar-path", dest="jar_path", required=True,
                                help="Path for jar to be deployed")
@@ -77,8 +77,7 @@ def parse_args():
 
     cancel_parser.set_defaults(action="cancel")
 
-    savepoint_parser = cmds.add_parser(
-        'savepoint', help="Trigger a savepoint for a running Job")
+    savepoint_parser = cmds.add_parser('savepoint', help="Trigger a savepoint for a running Job")
 
     savepoint_parser.add_argument("--target-dir", dest="target_dir", required=True,
                                   help="Target directory to log job savepoints")
@@ -90,9 +89,8 @@ def parse_args():
 
     args = parser.parse_args()
 
-    if args.use_yarn is True and (args.app_name is None or args.yarn_address is None or args.yarn_port is None):
-        parser.error(
-            "When setting --y, {--app-name; --yarn-address; --yarn-port} must be provided")
+    if args.use_yarn is True and (args.yarn_address is None or args.yarn_port is None):
+        parser.error("When setting --y, {--yarn-address; --yarn-port} must be provided")
 
     return args
 
@@ -104,8 +102,7 @@ def main():
     use_yarn = args.use_yarn
 
     if use_yarn is True:
-        yarn_info = find_manager_address(
-            args.yarn_address, args.yarn_port, args.app_name)
+        yarn_info = find_manager_address(args.yarn_address, args.yarn_port, args.app_id)
 
         manager_address = yarn_info['rpc_address']
         manager_port = yarn_info['rpc_port']
