@@ -6,6 +6,8 @@ import time
 from requests.exceptions import HTTPError
 from flink_scrat.exceptions import (FailedSavepointException, MaxRetriesReachedException,
                                     NotValidJARException, JobRunFailedException, JobIdNotFoundException)
+from flink_scrat.utils import handle_response
+
 
 logger = logging.getLogger(__name__)
 
@@ -15,19 +17,15 @@ class FlinkJobmanagerConnector():
     def __init__(self, address, port):
         self.path = "http://{}:{}".format(address, port)
 
-    def handle_response(self, req_response):
-        req_response.raise_for_status()
-        return req_response.json()
-
     def list_jars(self):
         route = "{}/jars".format(self.path)
-        response = self.handle_response(requests.get(route))
+        response = handle_response(requests.get(route))
 
         return response
 
     def delete_jar(self, jar_id):
         route = "{}/jars/{}".format(self.path, jar_id)
-        response = self.handle_response(requests.delete(route))
+        response = handle_response(requests.delete(route))
 
         return response
 
@@ -72,7 +70,7 @@ class FlinkJobmanagerConnector():
         }
 
         try:
-            response = self.handle_response(requests.post(route, json=body))
+            response = handle_response(requests.post(route, json=body))
 
             if response is not None:
                 request_id = response["request-id"]
@@ -86,8 +84,7 @@ class FlinkJobmanagerConnector():
         logger.info("Starting job for deployed JAR=<{}>".format(jar_id))
         route = "{}/jars/{}/run".format(self.path, jar_id)
         try:
-            response = self.handle_response(
-                requests.post(route, json=job_params))
+            response = handle_response(requests.post(route, json=job_params))
             return response
         except HTTPError as e:
             raise JobRunFailedException("Unable to start running job from jar=<{}>. Reason=<{}>"
@@ -97,7 +94,7 @@ class FlinkJobmanagerConnector():
         route = "{}/jobs/{}/savepoints/{}".format(
             self.path, job_id, request_id)
 
-        return self.handle_response(requests.get(route))
+        return handle_response(requests.get(route))
 
     def submit_jar(self, jar_path):
         with open(jar_path, "rb") as jar:
@@ -106,7 +103,7 @@ class FlinkJobmanagerConnector():
 
             route = "{}/jars/upload".format(self.path)
             try:
-                response = self.handle_response(
+                response = handle_response(
                     requests.post(route, files=file_dict))
 
                 jar_id = os.path.basename(response['filename'])
@@ -119,7 +116,7 @@ class FlinkJobmanagerConnector():
     def job_info(self, job_id):
         route = "{}/jobs/{}".format(self.path, job_id)
 
-        return self.handle_response(requests.get(route))
+        return handle_response(requests.get(route))
 
     def _build_job_params(self, raw_params):
         return {key: value for key, value in raw_params.items() if value is not None}
@@ -158,7 +155,7 @@ class FlinkJobmanagerConnector():
 
     def list_jobs(self):
         route = "{}/jobs".format(self.path)
-        response = self.handle_response(requests.get(route))
+        response = handle_response(requests.get(route))
 
         return response
 
@@ -189,7 +186,7 @@ class FlinkJobmanagerConnector():
         route = "{}/jobs/{}".format(self.path, job_id)
 
         try:
-            self.handle_response(requests.patch(route, params=params))
+            handle_response(requests.patch(route, params=params))
             return self._await_job_termination(job_id)
         except HTTPError as e:
             raise JobIdNotFoundException("Could not find job=<{}>. Reason=<{}>".format(job_id, e.response.text))
