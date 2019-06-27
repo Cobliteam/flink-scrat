@@ -58,7 +58,7 @@ def parse_args():
     submit_parser.add_argument("--allow-non-restore", dest="anr", required=False,
                                help="If present allows job to start even if restore from savepoint fails")
 
-    submit_parser.add_argument("--extra-args", dest="extra", required=False,
+    submit_parser.add_argument("--extra-args", dest="extra_args", required=False,
                                help="""Extra comma-separeted configuration options.
                                 See https://ci.apache.org/projects/flink/flink-docs-release-1.8/ops/config.html""")
 
