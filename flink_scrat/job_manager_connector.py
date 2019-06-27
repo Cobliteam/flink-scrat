@@ -85,6 +85,10 @@ class FlinkJobmanagerConnector():
         route = "{}/jars/{}/run".format(self.path, jar_id)
         try:
             response = handle_response(requests.post(route, json=job_params))
+
+            new_job_id = response["properties"]["jobid"]
+            logger.info("New job with job_id=<{}> deployed".format(new_job_id))
+
             return response
         except HTTPError as e:
             raise JobRunFailedException("Unable to start running job from jar=<{}>. Reason=<{}>"
