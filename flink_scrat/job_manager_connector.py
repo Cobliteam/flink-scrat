@@ -86,7 +86,7 @@ class FlinkJobmanagerConnector():
         try:
             response = handle_response(requests.post(route, json=job_params))
 
-            new_job_id = response["properties"]["jobid"]
+            new_job_id = response["jobid"]
             logger.info("New job with job_id=<{}> deployed".format(new_job_id))
 
             return response
