@@ -21,7 +21,7 @@ jobs:
       script: skip
       deploy:
         - provider: script
-          script: $TRAVIS_BUILD_DIR/release.sh release
+          script: $TRAVIS_BUILD_DIR/release.sh
           skip_cleanup: yes
           on:
             branch: master
