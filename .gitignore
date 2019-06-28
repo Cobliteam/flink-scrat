@@ -6,7 +6,9 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+.vscode/
 build/
+scrat-env/
 develop-eggs/
 dist/
 downloads/
