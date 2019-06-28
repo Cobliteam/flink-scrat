@@ -61,7 +61,7 @@ class FlinkJobmanagerConnector():
         return self.trigger_savepoint(job_id, target_dir, cancel_job=True)
 
     def trigger_savepoint(self, job_id, target_dir, cancel_job=False):
-        logger.info("Cancelling Job=<{}> and adding savepoit to savepoint_path=<{}>".format(job_id, target_dir))
+        logger.info("Cancelling Job=<{}> and adding savepoint to savepoint_path=<{}>".format(job_id, target_dir))
         route = "{}/jobs/{}/savepoints/".format(self.path, job_id)
 
         body = {
