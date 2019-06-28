@@ -16,6 +16,7 @@ script:
   
 jobs:
   include:
+    - stage: test
     - stage: deploy
       script: skip
       deploy:
