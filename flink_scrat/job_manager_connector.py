@@ -125,7 +125,7 @@ class FlinkJobmanagerConnector():
     def _build_job_params(self, raw_params):
         return {key: value for key, value in raw_params.items() if value is not None}
 
-    def submit_job(self, jar_path, target_dir=None, job_id=None, allow_non_restore=False,
+    def submit_job(self, jar_path, savepoint_path=None, target_dir=None, job_id=None, allow_non_restore=False,
                    parallelism=1, entry_class=None, extra_args=None):
         deploy_params = {
             "jar-path": jar_path,
@@ -135,19 +135,28 @@ class FlinkJobmanagerConnector():
 
         logger.info("Submiting job to cluster")
         logging.info("Deploy Parameters=<>{}".format(deploy_params))
-        if job_id is not None and target_dir is not None:
+
+        job_params = self._build_job_params({
+            "allowNonRestoredState": allow_non_restore,
+            "programArg": extra_args,
+            "parallelism": parallelism,
+            "entryClass": entry_class
+        })
+
+        if savepoint_path is not None:
+            logger.info("Restoring job from savepoint=<{}>".format(savepoint_path))
+            job_params["savepointPath"] = savepoint_path
+            logging.info("Job Parameters=<>{}".format(job_params))
+            jar_id = self.submit_jar(jar_path)
+
+            return self.run_job(jar_id, job_params)
+
+        elif job_id is not None and target_dir is not None:
             logger.info("Triggering savepoint for job=<{}>".format(job_id))
-            savepoint_path = self.cancel_job_with_savepoint(job_id, target_dir)
+            new_savepoint_path = self.cancel_job_with_savepoint(job_id, target_dir)
 
-            if savepoint_path is not None:
-                job_params = self._build_job_params({
-                    "allowNonRestoredState": allow_non_restore,
-                    "programArg": extra_args,
-                    "parallelism": parallelism,
-                    "entryClass": entry_class,
-                    "savepointPath": savepoint_path
-                })
-
+            if new_savepoint_path is not None:
+                job_params["savepointPath"] = new_savepoint_path
                 logging.info("Job Parameters=<>{}".format(job_params))
                 jar_id = self.submit_jar(jar_path)
 

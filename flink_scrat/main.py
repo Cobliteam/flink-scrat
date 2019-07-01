@@ -40,6 +40,9 @@ def parse_args():
 
     submit_parser = cmds.add_parser('submit', help="Submit a job to the flink cluster")
 
+    submit_parser.add_argument("--savepoint-path", dest="savepoint_path", required=False,
+                               help="Restore a job from a savepoint")
+
     submit_parser.add_argument("--jar-path", dest="jar_path", required=True,
                                help="Path for jar to be deployed")
 
@@ -115,7 +118,7 @@ def main():
     action = args.action
 
     if action == "submit":
-        conn.submit_job(args.jar_path, args.target_dir, args.job_id, args.anr,
+        conn.submit_job(args.jar_path, args.savepoint_path, args.target_dir, args.job_id, args.anr,
                         args.parallelism, args.entry_class, args.extra_args)
     elif action == "cancel":
         if args.savepoint is None:

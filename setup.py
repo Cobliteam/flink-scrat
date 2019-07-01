@@ -1,6 +1,6 @@
 from setuptools import setup
 
-VERSION = '0.3.1-SNAPSHOT'
+VERSION = '0.3.1'
 
 install_requires = [
     'requests==2.22.0',
