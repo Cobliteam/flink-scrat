@@ -130,7 +130,8 @@ class FlinkJobmanagerConnector():
         deploy_params = {
             "jar-path": jar_path,
             "target-directory": target_dir,
-            "job-id": job_id
+            "job-id": job_id,
+            "savepoint-path": savepoint_path
         }
 
         logger.info("Submiting job to cluster")

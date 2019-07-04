@@ -39,15 +39,16 @@ def parse_args():
     cmds = parser.add_subparsers(help="sub-command help")
 
     submit_parser = cmds.add_parser('submit', help="Submit a job to the flink cluster")
+    savepoint_group = submit_parser.add_mutually_exclusive_group()
 
-    submit_parser.add_argument("--savepoint-path", dest="savepoint_path", required=False,
-                               help="Restore a job from a savepoint")
+    savepoint_group.add_argument("--savepoint-path", dest="savepoint_path", required=False,
+                                 help="Restore a job from a savepoint")
 
     submit_parser.add_argument("--jar-path", dest="jar_path", required=True,
                                help="Path for jar to be deployed")
 
-    submit_parser.add_argument("--target-dir", dest="target_dir", required=False,
-                               help="Target directory to log job savepoints")
+    savepoint_group.add_argument("--target-dir", dest="target_dir", required=False,
+                                 help="Target directory to log job savepoints")
 
     submit_parser.add_argument("--job-id", dest="job_id", required=False,
                                help="Unique identifier for job to be restored")
