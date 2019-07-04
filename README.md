@@ -50,16 +50,19 @@ If `--y` is set, it is necessary to provide `--app-id`, `--yarn-address` and `--
 
 ### Submit
 
-When submitting a job to the flink cluster you have the option of restore that job from a previous savepoint or to just run that job. To use the restored state just add the jobId of the job you want to savepoint and the target directory of that savepoint to the submit action. Otherwise just add the path to the jar and that's it
+When submitting a job to the flink cluster you have the option of restore that job from a previous savepoint or to just run that job. To use the restored state, if you wish to restore from a running job just add the jobId of the job you want to savepoint and the target directory of that savepoint to the submit action, if you want to restore from a given savepoint, add the path to the savepoint-path parameter. Otherwise just add the path to the jar and that's it.
 
 ```
-usage: flink-scrat submit [-h] --jar-path JAR_PATH [--target-dir TARGET_DIR]
-                          [--job-id JOB_ID] [--parallelism PARALLELISM]
+usage: flink-scrat submit [-h] [--savepoint-path SAVEPOINT_PATH] --jar-path
+                          JAR_PATH [--target-dir TARGET_DIR] [--job-id JOB_ID]
+                          [--parallelism PARALLELISM]
                           [--entry-class ENTRY_CLASS]
-                          [--allow-non-restore ANR] [--extra-args EXTRA]
+                          [--allow-non-restore ANR] [--extra-args EXTRA_ARGS]
 
 optional arguments:
   -h, --help            show this help message and exit
+  --savepoint-path SAVEPOINT_PATH
+                        Restore a job from a savepoint
   --jar-path JAR_PATH   Path for jar to be deployed
   --target-dir TARGET_DIR
                         Target directory to log job savepoints
@@ -71,7 +74,8 @@ optional arguments:
   --allow-non-restore ANR
                         If present allows job to start even if restore from
                         savepoint fails
-  --extra-args EXTRA    Extra comma-separeted configuration options. See
+  --extra-args EXTRA_ARGS
+                        Extra comma-separeted configuration options. See
                         https://ci.apache.org/projects/flink/flink-docs-
                         release-1.8/ops/config.html
 ```
