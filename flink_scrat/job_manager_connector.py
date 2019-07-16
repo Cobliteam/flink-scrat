@@ -165,7 +165,7 @@ class FlinkJobmanagerConnector():
 
         else:
             jar_id = self.submit_jar(jar_path)
-            return self.run_job(jar_id)
+            return self.run_job(jar_id, job_params)
 
     def list_jobs(self):
         route = "{}/jobs".format(self.path)
