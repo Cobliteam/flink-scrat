@@ -65,24 +65,10 @@ new_version=$(bumpversion -n --list $bumpversion_part \
 
 new_tag="v${new_version}"
 
-# If in master bump release and set dev to the next non-production version
+# If in master bump release
 bumpversion $bumpversion_part \
   --commit --tag --tag-name='v{new_version}' \
   --message 'Release {new_version} [ci skip]'
-
-dev_push=
-if [[ "$TRAVIS_BRANCH" != dev ]] && git fetch origin dev:dev; then
-    git checkout dev
-    git merge --ff-only "$TRAVIS_BRANCH"
-    bumpversion $bumpversion_prerelease_part \
-        --commit --no-tag \
-        --message 'Start dev version {new_version} [ci skip]'
-    git checkout -
-
-    dev_push=dev
-fi
-
-git push --atomic origin "$TRAVIS_BRANCH" "$new_tag" $dev_push
 
 # Make the Github releases
 gen_release_notes() {
