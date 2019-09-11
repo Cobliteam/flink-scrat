@@ -29,7 +29,7 @@ class FlinkJobmanagerConnector():
 
         return response
 
-    def _await_savepoint_completion(self, job_id, request_id, max_retries=60, retry_sleep_seconds=4):
+    def _await_savepoint_completion(self, job_id, request_id, max_retries=180, retry_sleep_seconds=2):
         in_progess_status = 'IN_PROGRESS'
         for try_num in range(0, max_retries):
             trigger_info = self.savepoint_trigger_info(job_id, request_id)
