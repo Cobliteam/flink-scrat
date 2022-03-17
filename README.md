@@ -1,3 +1,5 @@
+# This repo is deprecated - we are using kubernetes deployment with one job per cluster
+
 # flink-scrat
 A python client to deploy JVM flink applications to a remote cluster
 
