@@ -122,7 +122,7 @@ def main():
         conn.submit_job(args.jar_path, args.savepoint_path, args.target_dir, args.job_id, args.anr,
                         args.parallelism, args.entry_class, args.extra_args)
     elif action == "cancel":
-        if args.savepoint is None:
+        if args.savepoint is None or args.savepoint is False:
             conn.cancel_job(args.job_id)
         else:
             conn.cancel_job_with_savepoint(args.job_id, args.target_dir)
